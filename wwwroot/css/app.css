@@ -360,14 +360,23 @@ a:hover, .btn-link:hover {
     background-color: #dc2626 !important;
 }
 
-/* Errores Blazor */
+/* Errores Blazor (Oculto por defecto; Blazor lo muestra solo en caso de excepción no controlada) */
 #blazor-error-ui {
+    display: none;
     background: #18181b;
     color: #f4f4f5;
     bottom: 0;
+    left: 0;
     position: fixed;
     width: 100%;
-    z-index: 1050;
+    z-index: 2000;
     padding: 0.75rem 1rem;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
 }
