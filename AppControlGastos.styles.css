@@ -1,23 +1,23 @@
 /* /Layout/MainLayout.razor.rz.scp.css */
 /* Scoped styles are handled directly in MainLayout.razor and app.css */
 /* /Layout/NavMenu.razor.rz.scp.css */
-.bg-slate-900[b-tp3dln1rmj] {
+.bg-slate-900[b-jvdljrqyuy] {
     background-color: #0f172a !important;
 }
 
-.border-slate-800[b-tp3dln1rmj] {
+.border-slate-800[b-jvdljrqyuy] {
     border-color: #1e293b !important;
 }
 
-.text-slate-400[b-tp3dln1rmj] {
+.text-slate-400[b-jvdljrqyuy] {
     color: #94a3b8 !important;
 }
 
-.text-slate-200[b-tp3dln1rmj] {
+.text-slate-200[b-jvdljrqyuy] {
     color: #e2e8f0 !important;
 }
 
-.brand-badge[b-tp3dln1rmj] {
+.brand-badge[b-jvdljrqyuy] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -31,12 +31,12 @@
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
-.fs-xs[b-tp3dln1rmj] {
+.fs-xs[b-jvdljrqyuy] {
     font-size: 0.7rem;
     letter-spacing: 0.05em;
 }
 
-.nav-item[b-tp3dln1rmj]  a {
+.nav-item[b-jvdljrqyuy]  a {
     color: #94a3b8;
     text-decoration: none;
     font-size: 0.88rem;
@@ -46,33 +46,33 @@
     align-items: center;
 }
 
-.nav-item[b-tp3dln1rmj]  a:hover {
+.nav-item[b-jvdljrqyuy]  a:hover {
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.07);
 }
 
-.nav-item[b-tp3dln1rmj]  a.active {
+.nav-item[b-jvdljrqyuy]  a.active {
     color: #ffffff;
     background-color: #1e293b;
     font-weight: 600;
     box-shadow: inset 3px 0 0 #10b981;
 }
 
-.nav-scrollable[b-tp3dln1rmj] {
+.nav-scrollable[b-jvdljrqyuy] {
     max-height: calc(100vh - 3.5rem);
     overflow-y: auto;
 }
 
 @media (min-width: 641px) {
-    .navbar-toggler[b-tp3dln1rmj] {
+    .navbar-toggler[b-jvdljrqyuy] {
         display: none;
     }
 
-    .collapse[b-tp3dln1rmj] {
+    .collapse[b-jvdljrqyuy] {
         display: block;
     }
 
-    .nav-scrollable[b-tp3dln1rmj] {
+    .nav-scrollable[b-jvdljrqyuy] {
         max-height: calc(100vh - 3.5rem);
         overflow-y: auto;
     }
