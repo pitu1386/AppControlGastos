@@ -1,0 +1,51 @@
+{
+  "name": "Finanzas Autónomo - Control Contable Interno",
+  "short_name": "FinanzasPro",
+  "description": "Sistema de gestión financiera y contabilidad interna para autónomos con cobros al exterior, gastos compartidos, préstamos y cálculo de dinero real disponible.",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "categories": ["finance", "business", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrar Gasto",
+      "short_name": "Gasto",
+      "description": "Registrar nuevo gasto personal, profesional o compartido",
+      "url": "./gastos",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Emitir Factura",
+      "short_name": "Factura",
+      "description": "Emitir factura nacional o a Bélgica/exterior",
+      "url": "./facturas",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Gastos Pareja",
+      "short_name": "Pareja",
+      "description": "Consultar liquidación y saldo pendiente con tu pareja",
+      "url": "./gastos-compartidos",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

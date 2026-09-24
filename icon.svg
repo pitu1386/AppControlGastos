@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Gradiente de fondo carbón profundo / grafito -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+
+    <!-- Gradiente del anillo / curva geométrica -->
+    <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e4e4e7"/>
+    </linearGradient>
+
+    <!-- Gradiente del acento menta pastel (Disponible Real) -->
+    <linearGradient id="mintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="100%" stop-color="#6ee7b7"/>
+    </linearGradient>
+
+    <!-- Sombra sutil de profundidad -->
+    <filter id="subtleShadow" x="-10%" y="-10%" width="120%" height="125%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Superficie exterior redondeada de la App (estilo iOS / Android Squircle) -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bgGrad)"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="#27272a" stroke-width="4"/>
+
+  <!-- Símbolo Central Fintech: Monograma de Euro + Curva de Control Financiero -->
+  <g filter="url(#subtleShadow)">
+    <!-- Curva C de Euro estilizada -->
+    <path d="M 330 165 C 290 120, 205 120, 165 175 C 125 230, 125 295, 165 350 C 205 405, 290 405, 330 360" 
+          fill="none" 
+          stroke="url(#curveGrad)" 
+          stroke-width="36" 
+          stroke-linecap="round"/>
+
+    <!-- Barra transversal superior del Euro (Monocromo blanco puro) -->
+    <line x1="120" y1="230" x2="270" y2="230" 
+          stroke="#ffffff" 
+          stroke-width="34" 
+          stroke-linecap="round"/>
+
+    <!-- Barra transversal inferior del Euro (Monocromo blanco puro) -->
+    <line x1="120" y1="295" x2="295" y2="295" 
+          stroke="#ffffff" 
+          stroke-width="34" 
+          stroke-linecap="round"/>
+
+    <!-- Acento: Orbe de Liquidez / Disponible Real (Verde Menta Pastel) -->
+    <circle cx="365" cy="155" r="26" fill="url(#mintGrad)"/>
+  </g>
+</svg>
