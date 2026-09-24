@@ -4,7 +4,7 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? Footer { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public string MaxWidth { get; set; } = "480px";
+    [Parameter] public string MaxWidth { get; set; } = "650px";
 
     private async Task CloseModal()
     {
@@ -14,130 +14,23 @@
 
 @if (IsOpen)
 {
-    <div class="custom-sheet-backdrop" @onclick="CloseModal">
-        <div class="custom-sheet-container" style="max-width: @MaxWidth;" @onclick:stopPropagation="true">
-            <!-- Barra tirador táctil para móvil -->
-            <div class="custom-sheet-handle-bar d-block d-sm-none">
-                <div class="custom-sheet-handle"></div>
-            </div>
-
-            <!-- Cabecera del Bottom Sheet -->
-            <div class="custom-sheet-header">
-                <h5 class="custom-sheet-title">@Title</h5>
-                <button type="button" class="btn-close touch-target-44" aria-label="Cerrar" @onclick="CloseModal"></button>
-            </div>
-
-            <!-- Cuerpo con scroll interno -->
-            <div class="custom-sheet-body">
-                @ChildContent
-            </div>
-
-            <!-- Pie de acciones con Safe Area inferior -->
-            @if (Footer != null)
-            {
-                <div class="custom-sheet-footer">
-                    @Footer
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(2px); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: @MaxWidth;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-header border-bottom px-4 py-3 bg-light">
+                    <h5 class="modal-title fw-bold text-dark fs-5">@Title</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseModal"></button>
                 </div>
-            }
+                <div class="modal-body p-4" style="max-height: 80vh; overflow-y: auto;">
+                    @ChildContent
+                </div>
+                @if (Footer != null)
+                {
+                    <div class="modal-footer border-top px-4 py-3 bg-light">
+                        @Footer
+                    </div>
+                }
+            </div>
         </div>
     </div>
 }
-
-<style>
-    .custom-sheet-backdrop {
-        position: absolute;
-        inset: 0;
-        background-color: rgba(15, 23, 42, 0.65);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        z-index: 1050;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        animation: fadeIn 0.18s ease-out;
-    }
-
-    .custom-sheet-container {
-        width: 100%;
-        background-color: #ffffff;
-        border-radius: 22px 22px 0 0;
-        max-height: 88dvh;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 -10px 30px -5px rgba(0, 0, 0, 0.3);
-        animation: slideSheetUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-        overflow: hidden;
-    }
-
-    .custom-sheet-handle-bar {
-        padding-top: 8px;
-        padding-bottom: 2px;
-        display: flex;
-        justify-content: center;
-        cursor: grab;
-    }
-
-    .custom-sheet-handle {
-        width: 38px;
-        height: 4px;
-        border-radius: 2px;
-        background-color: #cbd5e1;
-    }
-
-    .custom-sheet-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 16px;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .custom-sheet-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #0f172a;
-        margin: 0;
-    }
-
-    .custom-sheet-body {
-        padding: 16px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        flex: 1 1 auto;
-    }
-
-    .custom-sheet-footer {
-        padding: 10px 16px;
-        border-top: 1px solid #f1f5f9;
-        background-color: #f8fafc;
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
-    }
-
-    @@media (min-width: 576px) {
-        .custom-sheet-backdrop {
-            align-items: center;
-            padding: 20px;
-        }
-        .custom-sheet-container {
-            border-radius: 22px;
-            max-height: 82vh;
-            animation: zoomIn 0.18s ease-out;
-        }
-    }
-
-    @@keyframes slideSheetUp {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
-    }
-    @@keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    @@keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.96); }
-        to { opacity: 1; transform: scale(1); }
-    }
-</style>

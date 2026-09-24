@@ -1,246 +1,287 @@
-/* ==========================================================================
-   APP SHELL LOCK: PREVENCIÓN DE SCROLL GLOBAL Y REBOTE EN MÓVIL
-   ========================================================================== */
 html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    height: 100dvh;
-    overflow: hidden;
-    position: fixed;
-    overscroll-behavior: none;
-    -webkit-text-size-adjust: 100%;
-    background-color: #0b1329;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-#app {
-    width: 100%;
-    height: 100%;
-    height: 100dvh;
-    display: flex;
-    overflow: hidden;
-}
-
-.touch-target-44 {
-    min-width: 44px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.financial-display-amount {
-    font-size: clamp(1.45rem, 5.5vw, 1.85rem) !important;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-}
-
-@media (max-width: 575.98px) {
-    .card-body-mobile-compact {
-        padding: 1rem !important;
-    }
-    .card-header-mobile-compact {
-        padding: 0.75rem 1rem !important;
-    }
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 h1:focus {
     outline: none;
 }
 
-a, .btn-link {
-    color: #0071c1;
-}
-
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-.content {
-    padding-top: 1.1rem;
-}
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-}
-
-.invalid {
-    outline: 1px solid red;
-}
-
-.validation-message {
-    color: red;
-}
-
-#blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
-    width: 100%;
-    z-index: 1000;
-}
-
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
-
-.blazor-error-boundary {
-    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
-    padding: 1rem 1rem 1rem 3.7rem;
-    color: white;
-}
-
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
-    }
-
-.loading-progress {
-    position: absolute;
-    display: block;
-    width: 8rem;
-    height: 8rem;
-    inset: 20vh 0 auto 0;
-    margin: 0 auto 0 auto;
-}
-
-    .loading-progress circle {
-        fill: none;
-        stroke: #e0e0e0;
-        stroke-width: 0.6rem;
-        transform-origin: 50% 50%;
-        transform: rotate(-90deg);
-    }
-
-        .loading-progress circle:last-child {
-            stroke: #1b6ec2;
-            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
-            transition: stroke-dasharray 0.05s ease-in-out;
-        }
-
-.loading-progress-text {
-    position: absolute;
-    text-align: center;
-    font-weight: bold;
-    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
-}
-
-    .loading-progress-text:after {
-        content: var(--blazor-load-percentage-text, "Loading");
-    }
-
-code {
-    color: #c02d76;
-}
-
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-    text-align: start;
-}
-
-/* Modern Fintech Design System */
+/* ==========================================================================
+   DESIGN SYSTEM MONOCROMÁTICO (Blanco, Grises, Negros) & Pasteles Suaves
+   ========================================================================== */
 :root {
-    --primary: #2563eb;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #06b6d4;
-    --indigo: #6366f1;
-    --slate-800: #1e293b;
-    --slate-900: #0f172a;
+    /* Superficies Monocromáticas */
+    --surface-page: #f8fafc;
+    --surface-card: #ffffff;
+    --surface-card-subtle: #f9fafb;
+    --surface-dark: #0f172a;
+    --surface-dark-card: #181f2e;
+
+    /* Textos Monocromáticos */
+    --text-primary: #09090b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-subtle: #94a3b8;
+
+    /* Bordes */
+    --border-default: #e2e8f0;
+    --border-subtle: #f1f5f9;
+    --border-dark: #1e293b;
+
+    /* Primario Monocromático (Negro Carbón) */
+    --primary-main: #18181b;
+    --primary-hover: #27272a;
+    --primary-active: #09090b;
+
+    /* Semántica Pastel (Desaturados, no estridentes) */
+    /* Éxito / Cobros / Ahorro (Menta/Salvia Pastel) */
+    --pastel-success-bg: #ecfdf5;
+    --pastel-success-border: #a7f3d0;
+    --pastel-success-text: #065f46;
+
+    /* Gasto / Deuda / Negativo (Rosa Pastel) */
+    --pastel-danger-bg: #fef2f2;
+    --pastel-danger-border: #fecaca;
+    --pastel-danger-text: #991b1b;
+
+    /* Alerta / Reservas Fiscales (Ámbar Trigo Pastel) */
+    --pastel-warning-bg: #fffbeb;
+    --pastel-warning-border: #fde68a;
+    --pastel-warning-text: #92400e;
+
+    /* Neutro / Información / Profesional (Pizarra Pastel) */
+    --pastel-info-bg: #f1f5f9;
+    --pastel-info-border: #e2e8f0;
+    --pastel-info-text: #334155;
 }
 
-body {
-    background-color: #f8fafc;
-    color: #1e293b;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    -webkit-font-smoothing: antialiased;
-}
-
+/* ==========================================================================
+   TIPOGRAFÍA Y UTILIDADES
+   ========================================================================== */
 .fs-xs {
     font-size: 0.75rem !important;
+}
+
+.fs-sm {
+    font-size: 0.85rem !important;
 }
 
 .tracking-wider {
     letter-spacing: 0.05em;
 }
 
-/* Metric Cards */
-.metric-card {
-    background: #ffffff;
-    border-radius: 14px;
-    border: 1px solid #e2e8f0;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.04) !important;
-}
-
-.metric-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #64748b;
-}
-
-.metric-amount {
-    font-size: 1.55rem;
-    color: #0f172a;
+.tracking-tight {
     letter-spacing: -0.02em;
 }
 
-.metric-subtitle {
-    font-size: 0.8rem;
-    color: #64748b;
+/* Tipografía fluida para importes destacados */
+.financial-display-amount {
+    font-size: clamp(1.45rem, 5.5vw, 1.85rem);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
 }
 
-.metric-icon-wrap {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* ==========================================================================
+   SUPERFICIES: TARJETAS Y CONTENEDORES
+   ========================================================================== */
+.card {
+    background-color: var(--surface-card) !important;
+    border: 1px solid var(--border-default) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.metric-icon-primary { background-color: #eff6ff; color: #2563eb; }
-.metric-icon-success { background-color: #ecfdf5; color: #059669; }
-.metric-icon-warning { background-color: #fffbeb; color: #d97706; }
-.metric-icon-danger  { background-color: #fef2f2; color: #dc2626; }
-.metric-icon-info    { background-color: #ecfeff; color: #0891b2; }
-.metric-icon-indigo  { background-color: #eef2ff; color: #4f46e5; }
+.card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--border-default) !important;
+}
 
-/* Custom Metric Card borders */
-.metric-success { border-left: 4px solid #10b981 !important; }
-.metric-primary { border-left: 4px solid #2563eb !important; }
-.metric-warning { border-left: 4px solid #f59e0b !important; }
-.metric-danger  { border-left: 4px solid #ef4444 !important; }
-.metric-info    { border-left: 4px solid #06b6d4 !important; }
-.metric-indigo  { border-left: 4px solid #6366f1 !important; }
+/* Hero Cards (Disponible Real, Salud Financiera) en Negro Elegante */
+.hero-card-dark {
+    background: linear-gradient(145deg, #18181b 0%, #09090b 100%) !important;
+    border: 1px solid #27272a !important;
+    border-radius: 18px !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25) !important;
+}
 
-/* Modern table styling */
+/* ==========================================================================
+   BOTONES: MONOCROMÁTICOS Y PASTEL
+   ========================================================================== */
+/* Botón Principal: Negro Carbón Sólido */
+.btn-primary {
+    background-color: var(--primary-main) !important;
+    border-color: var(--primary-main) !important;
+    color: #ffffff !important;
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:active {
+    background-color: var(--primary-active) !important;
+    border-color: var(--primary-active) !important;
+}
+
+/* Botón Outline Primario: Blanco con borde gris y texto carbón */
+.btn-outline-primary {
+    background-color: #ffffff !important;
+    border-color: var(--border-default) !important;
+    color: var(--text-primary) !important;
+    font-weight: 500;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+    background-color: #f4f4f5 !important;
+    border-color: #d4d4d8 !important;
+    color: #000000 !important;
+}
+
+/* Botones de Acción Secundaria / Neutros */
+.btn-light, .btn-outline-secondary {
+    background-color: #f4f4f5 !important;
+    border-color: var(--border-default) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+}
+
+.btn-light:hover, .btn-outline-secondary:hover {
+    background-color: #e4e4e7 !important;
+    color: var(--text-primary) !important;
+}
+
+/* Botones Semánticos Pastel (Sin estridencias) */
+.btn-success, .btn-outline-success {
+    background-color: var(--pastel-success-bg) !important;
+    border-color: var(--pastel-success-border) !important;
+    color: var(--pastel-success-text) !important;
+    font-weight: 500;
+}
+
+.btn-success:hover, .btn-outline-success:hover {
+    background-color: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    color: #064e3b !important;
+}
+
+.btn-danger, .btn-outline-danger {
+    background-color: var(--pastel-danger-bg) !important;
+    border-color: var(--pastel-danger-border) !important;
+    color: var(--pastel-danger-text) !important;
+    font-weight: 500;
+}
+
+.btn-danger:hover, .btn-outline-danger:hover {
+    background-color: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    color: #7f1d1d !important;
+}
+
+.btn-warning, .btn-outline-warning {
+    background-color: var(--pastel-warning-bg) !important;
+    border-color: var(--pastel-warning-border) !important;
+    color: var(--pastel-warning-text) !important;
+    font-weight: 500;
+}
+
+.btn-warning:hover, .btn-outline-warning:hover {
+    background-color: #fef3c7 !important;
+    border-color: #fcd34d !important;
+}
+
+/* Enlaces */
+a, .btn-link {
+    color: var(--text-primary);
+}
+
+a:hover, .btn-link:hover {
+    color: #52525b;
+}
+
+/* Focus */
+.btn:focus, .btn:active:focus, .form-control:focus, .form-select:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.15rem rgba(24, 24, 27, 0.15) !important;
+    border-color: #71717a !important;
+}
+
+/* ==========================================================================
+   BADGES Y CHIPS: COLORES PASTELES DESATURADOS
+   ========================================================================== */
+.badge {
+    font-weight: 500 !important;
+    letter-spacing: -0.01em;
+}
+
+.badge.bg-primary, .badge.bg-primary-subtle, .badge-soft-primary {
+    background-color: var(--pastel-info-bg) !important;
+    color: var(--pastel-info-text) !important;
+    border: 1px solid var(--pastel-info-border) !important;
+}
+
+.badge.bg-success, .badge.bg-success-subtle, .badge-soft-success {
+    background-color: var(--pastel-success-bg) !important;
+    color: var(--pastel-success-text) !important;
+    border: 1px solid var(--pastel-success-border) !important;
+}
+
+.badge.bg-danger, .badge.bg-danger-subtle, .badge-soft-danger {
+    background-color: var(--pastel-danger-bg) !important;
+    color: var(--pastel-danger-text) !important;
+    border: 1px solid var(--pastel-danger-border) !important;
+}
+
+.badge.bg-warning, .badge.bg-warning-subtle, .badge-soft-warning {
+    background-color: var(--pastel-warning-bg) !important;
+    color: var(--pastel-warning-text) !important;
+    border: 1px solid var(--pastel-warning-border) !important;
+}
+
+.badge.bg-info, .badge.bg-info-subtle {
+    background-color: var(--pastel-info-bg) !important;
+    color: var(--pastel-info-text) !important;
+    border: 1px solid var(--pastel-info-border) !important;
+}
+
+.badge.bg-secondary, .badge.bg-secondary-subtle, .badge-soft-secondary {
+    background-color: #f4f4f5 !important;
+    color: #52525b !important;
+    border: 1px solid #e4e4e7 !important;
+}
+
+/* ==========================================================================
+   BORDES SEMÁNTICOS (Sutiles y Pasteles)
+   ========================================================================== */
+.border-primary { border-color: var(--border-default) !important; }
+.border-secondary { border-color: var(--border-default) !important; }
+.border-success, .border-emerald { border-color: var(--pastel-success-border) !important; }
+.border-danger, .border-rose { border-color: var(--pastel-danger-border) !important; }
+.border-warning { border-color: var(--pastel-warning-border) !important; }
+.border-info { border-color: var(--pastel-info-border) !important; }
+.border-indigo { border-color: var(--border-default) !important; }
+
+/* ==========================================================================
+   TEXTOS SEMÁNTICOS (Elegantes, no fluorescentes)
+   ========================================================================== */
+.text-primary { color: var(--text-primary) !important; }
+.text-success { color: var(--pastel-success-text) !important; }
+.text-danger { color: var(--pastel-danger-text) !important; }
+.text-warning { color: var(--pastel-warning-text) !important; }
+.text-info { color: var(--text-secondary) !important; }
+.text-indigo { color: var(--text-secondary) !important; }
+
+/* ==========================================================================
+   TABLAS MODERNAS
+   ========================================================================== */
 .table-modern {
     border-collapse: separate;
     border-spacing: 0;
@@ -250,34 +291,83 @@ body {
 .table-modern th {
     background-color: #f8fafc;
     color: #64748b;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-default);
 }
 
 .table-modern td {
-    padding: 14px 16px;
+    padding: 12px 14px;
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
 }
 
 .table-modern tr:hover td {
-    background-color: #f8fafc;
+    background-color: #f9fafb;
 }
 
-/* Card surfaces */
-.card {
-    border-radius: 14px;
+/* ==========================================================================
+   LISTADOS Y MENÚ
+   ========================================================================== */
+.list-group-item {
+    border-color: var(--border-subtle) !important;
+    background-color: #ffffff;
 }
 
-/* Pills & tags */
-.badge-soft-primary { background-color: #eff6ff; color: #1d4ed8; }
-.badge-soft-success { background-color: #ecfdf5; color: #047857; }
-.badge-soft-warning { background-color: #fffbeb; color: #b45309; }
-.badge-soft-danger  { background-color: #fef2f2; color: #b91c1c; }
-.badge-soft-indigo  { background-color: #eef2ff; color: #4338ca; }
-.badge-soft-secondary { background-color: #f1f5f9; color: #475569; }
+.menu-icon-pill {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+/* MenuPage: protección truncado con zoom */
+.list-group-item .d-flex.align-items-center.gap-3 > div:last-of-type {
+    min-width: 0;
+    overflow: hidden;
+}
+.list-group-item .d-flex.align-items-center.gap-3 > div:last-of-type .fw-semibold,
+.list-group-item .d-flex.align-items-center.gap-3 > div:last-of-type .fs-xs {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Progress bar sobria */
+.progress {
+    background-color: #f1f5f9 !important;
+    border-radius: 999px !important;
+}
+
+.progress-bar.bg-primary {
+    background-color: #18181b !important;
+}
+
+.progress-bar.bg-success {
+    background-color: #059669 !important;
+}
+
+.progress-bar.bg-danger {
+    background-color: #dc2626 !important;
+}
+
+/* Errores Blazor */
+#blazor-error-ui {
+    background: #18181b;
+    color: #f4f4f5;
+    bottom: 0;
+    position: fixed;
+    width: 100%;
+    z-index: 1050;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}

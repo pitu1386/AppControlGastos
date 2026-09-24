@@ -19,7 +19,7 @@
     <!-- TARJETAS DE RESUMEN -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-danger">
+            <div class="card p-3 bg-white">
                 <span class="text-muted small fw-semibold text-uppercase">Reserva Mensual Necesaria</span>
                 <span class="fs-4 fw-bold text-danger mt-1">
                     @AppState.Data.ImmediateFixedExpenses.ToString("N2") € / mes
@@ -28,22 +28,22 @@
             </div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-primary">
+            <div class="card p-3 bg-white">
                 <span class="text-muted small fw-semibold text-uppercase">Fijos Profesionales</span>
-                <span class="fs-4 fw-bold text-primary mt-1">
+                <span class="fs-4 fw-bold text-dark mt-1">
                     @AppState.Data.FixedExpenses.Where(f => f.IsActive && f.Scope == ExpenseScope.Profesional).Sum(f => f.MonthlyReserveAmount).ToString("N2") € / mes
                 </span>
                 <small class="text-muted">Autónomos, gestoría, herramientas...</small>
             </div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-info">
+            <div class="card p-3 bg-white">
                 <span class="text-muted small fw-semibold text-uppercase">% Sobre Facturación Media</span>
                 @{
                     decimal monthlyInvoiced = AppState.Data.CurrentMonthInvoiced > 0 ? AppState.Data.CurrentMonthInvoiced : 4000m;
                     decimal ratio = (AppState.Data.ImmediateFixedExpenses / monthlyInvoiced) * 100m;
                 }
-                <span class="fs-4 fw-bold text-info mt-1">@ratio.ToString("N1") %</span>
+                <span class="fs-4 fw-bold text-dark mt-1">@ratio.ToString("N1") %</span>
                 <small class="text-muted">Porcentaje de tus ingresos absorbido por fijos</small>
             </div>
         </div>

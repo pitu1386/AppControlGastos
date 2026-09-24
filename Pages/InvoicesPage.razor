@@ -18,14 +18,14 @@
     <!-- TARJETAS RESUMEN COMPACTAS MÓVILES -->
     <div class="row g-2 mb-3">
         <div class="col-6">
-            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-warning">
+            <div class="card p-2 bg-white rounded-3">
                 <span class="fs-xs text-muted fw-semibold">Pendiente Cobro</span>
                 <div class="fw-bold text-warning fs-6">@AppState.Data.TotalPendingInvoices.ToString("N2") €</div>
                 <div class="fs-xs text-muted">@AppState.Data.Invoices.Count(i => !i.IsCollected) pendientes</div>
             </div>
         </div>
         <div class="col-6">
-            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-success">
+            <div class="card p-2 bg-white rounded-3">
                 <span class="fs-xs text-muted fw-semibold">Ya Cobrado</span>
                 <div class="fw-bold text-success fs-6">
                     @AppState.Data.Invoices.Where(i => i.IsCollected).Sum(i => i.CollectedAmount > 0 ? i.CollectedAmount : i.TotalInvoice).ToString("N2") €
@@ -34,15 +34,15 @@
             </div>
         </div>
         <div class="col-12">
-            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-info">
+            <div class="card p-2 bg-white rounded-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="fs-xs text-muted fw-semibold">Reservas Fiscales IRPF Exterior</span>
-                        <div class="fw-bold text-info fs-6">
+                        <div class="fw-bold text-dark fs-6">
                             @AppState.Data.Invoices.Where(i => i.MustReserveIrpfExternally).Sum(i => i.IrpfReserveAmount).ToString("N2") €
                         </div>
                     </div>
-                    <span class="badge bg-info-subtle text-info border fs-xs">Para Modelo 130</span>
+                    <span class="badge bg-light text-muted border fs-xs">Para Modelo 130</span>
                 </div>
             </div>
         </div>
@@ -62,8 +62,11 @@
     <div class="d-flex flex-column gap-2 mb-4">
         @if (!FilteredInvoices.Any())
         {
-            <div class="card shadow-sm border-0 p-4 text-center text-muted small">
-                No hay facturas con estos filtros.
+            <div class="card shadow-sm border-0 p-5 text-center text-muted">
+                <div class="fs-1 mb-2 opacity-25">🧾</div>
+                <p class="fw-semibold text-slate-800 mb-1 small">Sin facturas con estos filtros</p>
+                <p class="mb-3 fs-xs">Emite una factura para registrar tus cobros y calcular las reservas de IRPF automáticamente.</p>
+                <button class="btn btn-primary rounded-pill px-4" @onclick="OpenAddModal">Emitir nueva factura</button>
             </div>
         }
         else

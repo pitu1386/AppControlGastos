@@ -18,25 +18,25 @@
     <!-- TARJETAS POR ÁMBITO MÓVILES -->
     <div class="row g-2 mb-3">
         <div class="col-4">
-            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-primary">
+            <div class="card p-2 bg-white rounded-3">
                 <span class="fs-xs text-muted fw-semibold">Profesional</span>
-                <div class="fw-bold text-primary small">
+                <div class="fw-bold text-dark small">
                     @AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Profesional).Sum(e => e.Amount).ToString("N0") €
                 </div>
             </div>
         </div>
         <div class="col-4">
-            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-info">
+            <div class="card p-2 bg-white rounded-3">
                 <span class="fs-xs text-muted fw-semibold">Personal</span>
-                <div class="fw-bold text-info small">
+                <div class="fw-bold text-dark small">
                     @AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Personal).Sum(e => e.Amount).ToString("N0") €
                 </div>
             </div>
         </div>
         <div class="col-4">
-            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-warning">
+            <div class="card p-2 bg-white rounded-3">
                 <span class="fs-xs text-muted fw-semibold">Compartido</span>
-                <div class="fw-bold text-warning small">
+                <div class="fw-bold text-dark small">
                     @AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Compartido).Sum(e => e.UserShareAmount).ToString("N0") €
                 </div>
             </div>

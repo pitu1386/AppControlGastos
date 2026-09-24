@@ -4,35 +4,36 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<header class="app-mobile-header">
+<header class="app-mobile-header sticky-top">
     <div class="d-flex align-items-center justify-content-between px-3 py-2">
         <!-- Logo / Marca -->
-        <a href="" class="d-flex align-items-center gap-2 text-decoration-none text-truncate me-2">
-            <span class="header-brand-badge flex-shrink-0">€</span>
-            <div class="text-truncate">
-                <div class="fw-bold text-white fs-6 lh-1 text-truncate">FinanzasPro</div>
-                <div class="fs-xs text-slate-400 text-truncate">Autónomo</div>
+        <a href="" class="d-flex align-items-center gap-2 text-decoration-none">
+            <img src="icon.svg" alt="FinanzasPro" class="header-brand-img" width="32" height="32" />
+            <div>
+                <div class="fw-bold text-white fs-6 lh-1">FinanzasPro</div>
+                <div class="fs-xs text-slate-400">Contabilidad Interna</div>
             </div>
         </a>
 
         <!-- Disponible Real y Acciones -->
-        <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0">
+        <div class="d-flex align-items-center gap-2">
             <div class="header-available-pill" title="Dinero Propio Realmente Disponible">
-                <span class="fs-xs text-slate-400 me-1">Disp:</span>
-                <span class="fw-bold fs-xs @(AppState.Data.RealAvailableCash >= 0 ? "text-emerald-400" : "text-rose-400")">
+                <span class="fs-xs text-slate-300 me-1">Disp:</span>
+                <span class="fw-bold @(AppState.Data.RealAvailableCash >= 0 ? "text-emerald-400" : "text-rose-400")">
                     @AppState.Data.RealAvailableCash.ToString("N0") €
                 </span>
             </div>
 
             @if (canInstall)
             {
-                <button class="header-icon-btn text-emerald-400" @onclick="InstallPwa" title="Instalar en tu móvil o PC">
-                    <Icon Name="download" Size="16" />
+                <button class="btn btn-xs btn-primary rounded-pill px-2 py-1 fs-xs d-flex align-items-center gap-1 shadow-xs" @onclick="InstallPwa" title="Instalar en tu móvil o PC">
+                    <Icon Name="download" Size="13" />
+                    <span>Instalar</span>
                 </button>
             }
 
-            <a href="configuracion" class="header-icon-btn text-slate-200" title="Estado de Supabase">
-                <span class="fs-xs">@(Sync.State == SyncState.Synced ? "🟢" : "☁️")</span>
+            <a href="configuracion" class="header-icon-btn text-slate-200" title="Estado de Supabase (@(Sync.State == SyncState.Synced ? "Sincronizado" : "Local / Nube"))">
+                <span class="fs-xs">@(Sync.State == SyncState.Synced ? "☁️" : "☁️")</span>
             </a>
 
             <a href="menu" class="header-icon-btn text-slate-200" title="Ver todos los módulos">
@@ -47,39 +48,24 @@
         background-color: #0f172a;
         border-bottom: 1px solid #1e293b;
         z-index: 1030;
-        flex-shrink: 0;
-        padding-top: max(env(safe-area-inset-top, 0px), 4px);
-        padding-left: env(safe-area-inset-left, 0px);
-        padding-right: env(safe-area-inset-right, 0px);
     }
-    .header-brand-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        font-weight: 800;
-        border-radius: 9px;
-        font-size: 0.95rem;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    .header-brand-img {
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        flex-shrink: 0;
     }
     .header-available-pill {
         background-color: #1e293b;
         border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 4px 8px;
-        font-size: 0.78rem;
-        white-space: nowrap;
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 0.8rem;
     }
-    .text-emerald-400 { color: #34d399 !important; }
-    .text-rose-400 { color: #fb7185 !important; }
+    .text-emerald-400 { color: #6ee7b7 !important; } /* Menta pastel suave */
+    .text-rose-400 { color: #fca5a5 !important; } /* Rosa pastel suave */
     .header-icon-btn {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        min-height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         background-color: #1e293b;
         border: 1px solid #334155;
@@ -88,10 +74,6 @@
         justify-content: center;
         text-decoration: none;
         transition: background 0.15s ease;
-        -webkit-tap-highlight-color: transparent;
-    }
-    .header-icon-btn:active {
-        background-color: #334155;
     }
     .header-icon-btn:hover {
         background-color: #334155;
