@@ -2,64 +2,76 @@
 @inject AppStateService AppState
 @implements IDisposable
 
-<div class="budgets-container">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+<div class="mobile-budgets-view p-3">
+    <!-- Encabezado Móvil Limpio -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h3 fw-bold text-slate-900 m-0">Presupuestos Mensuales</h1>
-            <p class="text-muted small m-0 mt-1">
-                Establece techos de gasto por categoría para saber en tiempo real cuánto llevas consumido sin tener que esperar a fin de mes.
-            </p>
+            <h1 class="h5 fw-bold text-slate-900 m-0">Presupuestos Mensuales</h1>
+            <p class="text-muted fs-xs m-0">Control de consumo y techos de gasto</p>
         </div>
-        <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddModal">
-            <Icon Name="plus" Size="16" />
-            <span>Definir Presupuesto</span>
+        <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1.5" @onclick="OpenAddModal">
+            <Icon Name="plus" Size="14" />
+            <span>Definir Límite</span>
         </button>
     </div>
 
-    <!-- TARJETAS DE RESUMEN GLOBAL -->
+    <!-- TARJETA HERO: ESTADO GLOBAL DE PRESUPUESTO -->
     @{
         decimal totalBudgeted = AppState.Data.BudgetCategories.Sum(b => b.MonthlyLimit);
         decimal totalSpentThisMonth = AppState.Data.Expenses
             .Where(e => e.Date.Month == DateTime.Today.Month && e.Date.Year == DateTime.Today.Year)
             .Sum(e => e.UserShareAmount);
         decimal globalPercentage = totalBudgeted > 0 ? Math.Round((totalSpentThisMonth / totalBudgeted) * 100m, 1) : 0m;
+        decimal globalRemaining = totalBudgeted - totalSpentThisMonth;
     }
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 p-3 bg-white">
-                <span class="text-muted small fw-semibold text-uppercase">Presupuesto Mensual Total</span>
-                <span class="fs-4 fw-bold text-dark mt-1">@totalBudgeted.ToString("N2") €</span>
-                <small class="text-muted">Límite asignado entre categorías</small>
-            </div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div class="card p-3 bg-white">
-                <span class="text-muted small fw-semibold text-uppercase">Gastado Este Mes</span>
-                <span class="fs-4 fw-bold @(totalSpentThisMonth > totalBudgeted ? "text-danger" : "text-dark") mt-1">
-                    @totalSpentThisMonth.ToString("N2") €
+    <div class="card hero-card-dark mb-3 overflow-hidden shadow-sm">
+        <div class="card-body p-3.5">
+            <div class="d-flex justify-content-between align-items-center mb-1.5">
+                <span class="fs-xs text-uppercase tracking-wider text-slate-400 fw-bold">Consumo Global del Mes</span>
+                <span class="badge fs-xs rounded-pill" style="@(globalRemaining >= 0 ? "background-color: var(--pastel-success-bg); color: var(--pastel-success-text); border: 1px solid var(--pastel-success-border);" : "background-color: var(--pastel-danger-bg); color: var(--pastel-danger-text); border: 1px solid var(--pastel-danger-border);")">
+                    @(globalRemaining >= 0 ? $"{globalPercentage}% consumido" : "Presupuesto excedido")
                 </span>
-                <small class="text-muted">Gasto real acumulado (@globalPercentage%)</small>
             </div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div class="card p-3 bg-white">
-                <span class="text-muted small fw-semibold text-uppercase">Margen Disponible</span>
-                <span class="fs-4 fw-bold @(totalBudgeted - totalSpentThisMonth >= 0 ? "text-success" : "text-danger") mt-1">
-                    @((totalBudgeted - totalSpentThisMonth).ToString("N2")) €
+
+            <div class="d-flex align-items-baseline justify-content-between my-1">
+                <div class="financial-display-amount fw-bold tracking-tight text-white">
+                    @totalSpentThisMonth.ToString("N2") € <span class="fs-6 fw-normal text-slate-300">/ @totalBudgeted.ToString("N0") €</span>
+                </div>
+            </div>
+
+            <!-- Barra de progreso global -->
+            <div class="my-2">
+                <div class="progress" style="height: 6px; border-radius: 3px; background-color: rgba(255, 255, 255, 0.15);">
+                    <div class="progress-bar @(globalPercentage > 100 ? "bg-danger" : (globalPercentage >= 80 ? "bg-warning" : "bg-light"))" 
+                         role="progressbar" 
+                         style="width: @Math.Min(globalPercentage, 100m)%;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2.5 pt-2 border-top border-slate-700 fs-xs">
+                <span class="text-slate-400">
+                    Margen restante: <strong class="@(globalRemaining >= 0 ? "text-emerald-400" : "text-rose-400")">@globalRemaining.ToString("N2") €</strong>
                 </span>
-                <small class="text-muted">Margen restante antes de exceder el límite</small>
+                <span class="text-slate-400">
+                    Categorías activas: <strong class="text-white">@AppState.Data.BudgetCategories.Count</strong>
+                </span>
             </div>
         </div>
     </div>
 
-    <!-- BARRAS DE PROGRESO POR CATEGORÍA -->
-    <div class="row g-4">
+    <!-- LISTADO DE CATEGORÍAS PRESUPUESTADAS -->
+    <div class="d-flex flex-column gap-2.5 mb-4">
         @if (!AppState.Data.BudgetCategories.Any())
         {
-            <div class="col-12">
-                <div class="card shadow-sm border-0 p-5 text-center text-muted">
-                    <h5>No tienes presupuestos definidos</h5>
-                    <p class="small">Añade límites por categoría como Alimentación, Ocio, Transporte o Vivienda para controlar tus gastos.</p>
+            <div class="card border-0 shadow-sm p-4 text-center bg-white rounded-3">
+                <Icon Name="pie-chart" Size="28" Class="text-muted opacity-50 mb-2" />
+                <div class="fw-bold text-slate-800 small">Sin presupuestos asignados</div>
+                <p class="text-muted fs-xs mb-3">Fija límites en Alimentación, Ocio o Suministros para mantener a raya tus gastos.</p>
+                <div>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3" @onclick="OpenAddModal">
+                        + Añadir primer límite
+                    </button>
                 </div>
             </div>
         }
@@ -74,39 +86,49 @@
 
                 decimal percentage = budget.MonthlyLimit > 0 ? Math.Round((spentInCategory / budget.MonthlyLimit) * 100m, 1) : 0m;
                 bool isExceeded = spentInCategory > budget.MonthlyLimit;
+                decimal remaining = budget.MonthlyLimit - spentInCategory;
 
-                <div class="col-12 col-md-6">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge @(isExceeded ? "bg-danger" : (percentage >= 80 ? "bg-warning text-dark" : "bg-primary")) px-2 py-1">
-                                        @budget.Category
-                                    </span>
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+                    <div class="p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="category-icon-bubble">
+                                    @GetCategoryIcon(budget.Category)
                                 </div>
                                 <div>
-                                    <button class="btn btn-outline-danger border-0 p-2 d-flex align-items-center justify-content-center"
-                                            style="min-width:44px;min-height:44px;"
-                                            @onclick="() => DeleteBudget(budget.Id)"
-                                            aria-label="Eliminar presupuesto @budget.Category">
-                                        <Icon Name="trash" Size="16" />
-                                    </button>
+                                    <div class="fw-bold text-slate-900 small">@budget.Category</div>
+                                    <div class="text-muted fs-xs">
+                                        Gastado: <strong class="text-slate-800">@spentInCategory.ToString("N2") €</strong> de @budget.MonthlyLimit.ToString("N0") €
+                                    </div>
                                 </div>
                             </div>
-
-                            <ProgressBar 
-                                Current="@spentInCategory" 
-                                Target="@budget.MonthlyLimit" 
-                                Label="@budget.Category" 
-                                CurrentFormatted="@($"{spentInCategory:N2} €")" 
-                                TargetFormatted="@($"{budget.MonthlyLimit:N2} €")" />
-
-                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top text-muted small">
-                                <span>Restante disponible:</span>
-                                <span class="fw-bold @(budget.MonthlyLimit - spentInCategory >= 0 ? "text-success" : "text-danger")">
-                                    @((budget.MonthlyLimit - spentInCategory).ToString("N2")) €
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="badge rounded-pill fs-xs" style="@(isExceeded ? "background-color: var(--pastel-danger-bg); color: var(--pastel-danger-text); border: 1px solid var(--pastel-danger-border);" : (percentage >= 80 ? "background-color: var(--pastel-warning-bg); color: var(--pastel-warning-text); border: 1px solid var(--pastel-warning-border);" : "background-color: var(--pastel-success-bg); color: var(--pastel-success-text); border: 1px solid var(--pastel-success-border);"))">
+                                    @percentage%
                                 </span>
+                                <button class="btn btn-sm btn-outline-secondary border-0 p-1.5 rounded-circle"
+                                        @onclick="() => DeleteBudget(budget.Id)"
+                                        title="Eliminar límite">
+                                    <Icon Name="trash" Size="13" />
+                                </button>
                             </div>
+                        </div>
+
+                        <!-- Barra de progreso de la categoría -->
+                        <div class="my-2">
+                            <div class="progress" style="height: 6px; border-radius: 3px; background-color: var(--color-slate-100);">
+                                <div class="progress-bar @(isExceeded ? "bg-danger" : (percentage >= 80 ? "bg-warning" : "bg-dark"))" 
+                                     role="progressbar" 
+                                     style="width: @Math.Min(percentage, 100m)%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-slate-50 fs-xs">
+                            <span class="text-muted">Margen disponible:</span>
+                            <strong class="@(remaining >= 0 ? "text-emerald-700" : "text-rose-700")">
+                                @remaining.ToString("N2") €
+                            </strong>
                         </div>
                     </div>
                 </div>
@@ -120,7 +142,7 @@
     <ChildContent>
         <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label small fw-semibold">Categoría</label>
+                <label class="form-label fs-xs fw-semibold text-muted text-uppercase">Categoría</label>
                 <select class="form-select" @bind="newCategory">
                     <option value="Alimentación">Alimentación</option>
                     <option value="Vivienda">Vivienda</option>
@@ -134,14 +156,14 @@
                 </select>
             </div>
             <div class="col-md-6">
-                <label class="form-label small fw-semibold">Límite Máximo Mensual (€)</label>
+                <label class="form-label fs-xs fw-semibold text-muted text-uppercase">Límite Máximo Mensual (€)</label>
                 <input type="number" step="10" class="form-control" @bind="newLimit" />
             </div>
         </div>
     </ChildContent>
     <Footer>
-        <button class="btn btn-light" @onclick="CloseModal">Cancelar</button>
-        <button class="btn btn-primary" @onclick="SaveBudget">Guardar Presupuesto</button>
+        <button class="btn btn-sm btn-light rounded-pill px-3" @onclick="CloseModal">Cancelar</button>
+        <button class="btn btn-sm btn-primary rounded-pill px-3" @onclick="SaveBudget">Guardar Límite</button>
     </Footer>
 </ModalDialog>
 
@@ -154,6 +176,19 @@
     {
         AppState.OnChange += StateHasChanged;
     }
+
+    private string GetCategoryIcon(string category) => category switch
+    {
+        "Alimentación" => "🛒",
+        "Vivienda" => "🏠",
+        "Ocio" => "☕",
+        "Transporte" => "🚗",
+        "Software" => "💻",
+        "Formación" => "📚",
+        "Material" => "📦",
+        "Equipamiento" => "⚙️",
+        _ => "📊"
+    };
 
     private void OpenAddModal()
     {
@@ -169,7 +204,7 @@
 
     private async Task SaveBudget()
     {
-        if (newLimit <= 0) return;
+        if (string.IsNullOrWhiteSpace(newCategory) || newLimit <= 0) return;
         await AppState.AddOrUpdateBudgetAsync(newCategory, newLimit);
         isModalOpen = false;
     }

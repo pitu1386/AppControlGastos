@@ -2,236 +2,241 @@
 @inject AppStateService AppState
 @implements IDisposable
 
-<div class="settings-container">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+<div class="mobile-settings-view p-3">
+    <!-- CABECERA MÓVIL IMPECCABLE -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h3 fw-bold text-slate-900 m-0">Ajustes & Respaldo de Datos</h1>
-            <p class="text-muted small m-0 mt-1">
-                Configura tu saldo bancario real, crea copias de seguridad en archivo JSON y restaura tus datos cuando lo necesites.
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-5">⚙️</span>
+                <h1 class="h5 fw-bold text-slate-900 m-0">Ajustes & Respaldo</h1>
+            </div>
+            <p class="fs-xs text-muted m-0 mt-1">
+                Saldo bancario, sincronización en la nube y copias de datos.
             </p>
         </div>
     </div>
 
-    <!-- SALDO BANCARIO INMEDIATO -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white border-bottom py-3 px-4">
-            <h2 class="h6 fw-bold m-0 text-slate-900">Saldo Actual en Cuenta Bancaria</h2>
-        </div>
-        <div class="card-body p-4">
-            <div class="row align-items-center g-3">
-                <div class="col-12 col-md-6">
-                    <label class="form-label small fw-semibold">Saldo total reflejado en tu banco (€)</label>
-                    <div class="input-group">
-                        <input type="number" step="10" class="form-control form-control-lg fw-bold" @bind="bankBalance" />
-                        <button class="btn btn-primary px-4" @onclick="UpdateBankBalance">Actualizar Saldo</button>
-                    </div>
-                    <small class="text-muted d-block mt-1">
-                        Este es el saldo que ves en tu app bancaria antes de aplicar las reservas fiscales y compromisos.
-                    </small>
-                </div>
-                <div class="col-12 col-md-6 text-md-end">
-                    <div class="p-3 bg-light rounded-3 d-inline-block text-start">
-                        <span class="small text-muted d-block">Disponible Real resultante:</span>
-                        <span class="fs-4 fw-bold @(AppState.Data.RealAvailableCash >= 0 ? "text-success" : "text-danger")">
-                            @AppState.Data.RealAvailableCash.ToString("N2") €
-                        </span>
-                    </div>
-                </div>
+    <!-- HERO CARD DARK: SALDO BANCARIO Y DISPONIBLE REAL RESULTANTE -->
+    <div class="card hero-card-dark mb-3 overflow-hidden shadow-sm" style="background: linear-gradient(145deg, #18181b 0%, #27272a 100%); color: #ffffff; border-radius: 16px; border: 1px solid #3f3f46;">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fs-xs text-uppercase tracking-wider fw-semibold" style="color: #a1a1aa;">
+                    Saldo en Cuenta Bancaria
+                </span>
+                <span class="badge" style="@(AppState.Data.RealAvailableCash >= 0 ? "background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4);" : "background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);")">
+                    Disponible: @AppState.Data.RealAvailableCash.ToString("N2") €
+                </span>
             </div>
-        </div>
-    </div>
 
-    <!-- COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white border-bottom py-3 px-4">
-            <h2 class="h6 fw-bold m-0 text-slate-900">Copias de Seguridad (Backup JSON)</h2>
-        </div>
-        <div class="card-body p-4">
-            <div class="row g-4">
-                <div class="col-12 col-md-6">
-                    <h3 class="h6 fw-bold text-dark">Descargar Copia de Seguridad</h3>
-                    <p class="small text-muted">
-                        Descarga un archivo <code>.json</code> completo con todas tus facturas, gastos, cuotas, proyectos, deudas y fondos. Puedes guardarlo en tu ordenador o nube.
-                    </p>
-                    <button class="btn btn-outline-primary rounded-pill px-4 d-flex align-items-center gap-2" @onclick="ExportBackup">
-                        <Icon Name="download" Size="16" />
-                        <span>Exportar Backup JSON</span>
+            <div class="my-2">
+                <div class="input-group">
+                    <input type="number" step="10" 
+                           class="form-control text-white border-0 fw-bold fs-4" 
+                           style="background: rgba(255, 255, 255, 0.1); border-radius: 12px 0 0 12px; min-height: 48px;" 
+                           @bind="bankBalance" />
+                    <button class="btn btn-light px-3 fw-semibold fs-xs" 
+                            style="border-radius: 0 12px 12px 0; min-height: 48px;" 
+                            @onclick="UpdateBankBalance">
+                        Guardar
                     </button>
                 </div>
+            </div>
 
-                <div class="col-12 col-md-6 border-start-md">
-                    <h3 class="h6 fw-bold text-dark">Restaurar Copia de Seguridad</h3>
-                    <p class="small text-muted">
-                        Selecciona un archivo JSON previamente exportado para recuperar toda tu información contable al instante.
-                    </p>
-                    <div class="mb-3">
-                        <InputFile OnChange="HandleFileSelected" class="form-control form-control-sm" accept=".json" />
+            <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-25 mt-2">
+                <span class="fs-xs" style="color: #a1a1aa;">Saldo bruto en tu app bancaria</span>
+                <span class="fs-xs fw-semibold text-white">Calcula reservas y disponible</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEGMENTED CONTROL: PESTAÑAS DE CONFIGURACIÓN -->
+    <div class="segmented-control mb-3">
+        <button class="segmented-item @(activeTab == "cloud" ? "active" : "")" @onclick='() => activeTab = "cloud"'>
+            ☁️ Nube Supabase
+        </button>
+        <button class="segmented-item @(activeTab == "backup" ? "active" : "")" @onclick='() => activeTab = "backup"'>
+            💾 Copias JSON
+        </button>
+        <button class="segmented-item @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>
+            🛠️ Datos & PWA
+        </button>
+    </div>
+
+    @if (activeTab == "cloud")
+    {
+        <!-- SECCIÓN NUBE SUPABASE -->
+        <div class="card border rounded-3 p-3 bg-white shadow-xs mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fs-5">☁️</span>
+                    <div>
+                        <span class="fw-bold text-slate-900 fs-sm d-block">Sincronización en la Nube</span>
+                        <span class="fs-xs text-muted">Tablas aisladas con prefijo gastos_*</span>
                     </div>
-                    @if (!string.IsNullOrEmpty(restoreMessage))
-                    {
-                        <div class="alert alert-info small py-2">@restoreMessage</div>
-                    }
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- DATOS DE DEMOSTRACIÓN Y REINICIO -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white border-bottom py-3 px-4">
-            <h2 class="h6 fw-bold m-0 text-slate-900">Gestión de Datos</h2>
-        </div>
-        <div class="card-body p-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                    <h3 class="h6 fw-bold text-dark m-0">Cargar Datos de Demostración Realistas</h3>
-                    <small class="text-muted">
-                        Rellena el programa con los datos de ejemplo (clientes de Bélgica a 90 días, autónomos 320€, gestoría 90€, cuotas de Argentina, préstamo familiar, mamá 500 USD).
-                    </small>
-                </div>
-                <button class="btn btn-outline-secondary rounded-pill px-4" @onclick="LoadDemo">
-                    Recargar Datos de Ejemplo
-                </button>
+                <span class="badge @(Sync.State == SyncState.Synced ? "badge-pastel-success" : (Sync.State == SyncState.Syncing ? "badge-pastel-warning" : (Sync.State == SyncState.Error ? "badge-pastel-danger" : "badge-pastel-dark"))) fs-xs">
+                    @(Sync.State == SyncState.Synced ? "🟢 Nube Conectada" : (Sync.State == SyncState.Syncing ? "🔄 Sincronizando..." : (Sync.State == SyncState.Error ? "🔴 Error" : "⚪ Solo Local")))
+                </span>
             </div>
 
-            <hr class="my-4" />
-
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                    <h3 class="h6 fw-bold text-danger m-0">Vaciar Todos los Datos</h3>
-                    <small class="text-muted">
-                        Borra todas las transacciones para comenzar tu contabilidad completamente limpia desde cero.
-                    </small>
-                </div>
-                <button class="btn btn-outline-danger rounded-pill px-4" @onclick="ClearAll">
-                    Empezar en Blanco
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SINCRONIZACIÓN EN LA NUBE (SUPABASE) -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-2">
-                <span class="fs-5">☁️</span>
-                <h2 class="h6 fw-bold m-0 text-slate-900">Sincronización Supabase (Nube)</h2>
-            </div>
-            <span class="badge @(Sync.State == SyncState.Synced ? "bg-success" : (Sync.State == SyncState.Syncing ? "bg-warning text-dark" : (Sync.State == SyncState.Error ? "bg-danger" : "bg-secondary")))">
-                @(Sync.State == SyncState.Synced ? "🟢 Nube conectada" : (Sync.State == SyncState.Syncing ? "🔄 Sincronizando..." : (Sync.State == SyncState.Error ? "🔴 Error" : "⚪ Solo Local")))
-            </span>
-        </div>
-        <div class="card-body p-4">
-            <div class="alert alert-light border small mb-3">
-                <div class="fw-bold mb-1">🔗 Proyecto Supabase Compartido:</div>
-                <div class="text-muted font-monospace mb-2">@AppInfo.SupabaseUrl</div>
-                <div class="d-flex align-items-center gap-2 text-success">
-                    <Icon Name="shield" Size="14" />
-                    <span><strong>Seguridad garantizada:</strong> Esta aplicación solo utiliza las tablas con prefijo <code>gastos_*</code>. Tus tablas de <em>AppCobros</em> (<code>clientes</code>, <code>config</code>, <code>grupos</code>, <code>movimientos</code>, <code>papelera</code>) quedan 100% intactas y sin tocar.</span>
-                </div>
-            </div>
-
-            <!-- Login opcional con la misma cuenta de Supabase -->
-            <div class="p-3 bg-light rounded-3 mb-3">
+            <!-- Cuenta de Usuario -->
+            <div class="p-3 bg-slate-50 rounded-3 border mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="small fw-bold">Cuenta de Usuario Supabase:</span>
+                    <span class="fs-xs fw-bold text-slate-800 text-uppercase">Sesión de Supabase:</span>
                     @if (Auth.IsSignedIn)
                     {
-                        <span class="badge bg-success-subtle text-success border border-success-subtle">
-                            Sesión activa: @Auth.Email
-                        </span>
+                        <span class="badge badge-pastel-success fs-xs">Activa</span>
                     }
                     else
                     {
-                        <span class="badge bg-light text-muted border">Modo anónimo / Sin iniciar sesión</span>
+                        <span class="badge badge-pastel-dark fs-xs">Modo Anónimo</span>
                     }
                 </div>
+
                 @if (Auth.IsSignedIn)
                 {
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Conectado como <strong>@Auth.Email</strong></small>
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="HandleLogout">Cerrar Sesión</button>
+                        <span class="fs-xs text-muted text-truncate me-2">@Auth.Email</span>
+                        <button class="btn btn-outline-secondary btn-xs rounded-pill px-3 py-1" style="min-height: 32px;" @onclick="HandleLogout">Cerrar</button>
                     </div>
                 }
                 else
                 {
-                    <div class="row g-2 align-items-center">
-                        <div class="col-12 col-md-5">
-                            <input type="email" placeholder="Email de Supabase" class="form-control form-control-sm" @bind="loginEmail" />
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <input type="password" placeholder="Contraseña" class="form-control form-control-sm" @bind="loginPassword" />
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <button class="btn btn-dark btn-sm w-100" @onclick="HandleLogin" disabled="@isLoggingIn">
-                                @(isLoggingIn ? "Entrando..." : "Iniciar Sesión")
-                            </button>
-                        </div>
+                    <div class="d-flex flex-column gap-2">
+                        <input type="email" placeholder="Email de Supabase" class="form-control form-control-sm" style="min-height: 40px;" @bind="loginEmail" />
+                        <input type="password" placeholder="Contraseña" class="form-control form-control-sm" style="min-height: 40px;" @bind="loginPassword" />
+                        <button class="btn btn-dark btn-sm rounded-pill w-100 fw-semibold" style="min-height: 40px;" @onclick="HandleLogin" disabled="@isLoggingIn">
+                            @(isLoggingIn ? "Entrando..." : "Iniciar Sesión en Supabase")
+                        </button>
                     </div>
                     @if (!string.IsNullOrEmpty(loginMessage))
                     {
-                        <small class="text-info d-block mt-2">@loginMessage</small>
+                        <div class="fs-xs text-info mt-2">@loginMessage</div>
                     }
                 }
             </div>
 
-            <!-- Acciones de sincronización -->
-            <div class="row g-3">
-                <div class="col-12 col-md-4">
-                    <button class="btn btn-outline-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2" @onclick="TestCloudConnection">
-                        <span>📡 Probar Conexión</span>
+            <!-- Botones de sincronización -->
+            <div class="d-flex flex-column gap-2">
+                <button class="btn btn-dark rounded-pill py-2 d-flex align-items-center justify-content-center gap-2" style="min-height: 44px;" @onclick="SyncPushToCloud">
+                    <Icon Name="upload" Size="16" />
+                    <span class="fs-sm fw-semibold">Subir Datos Locales a la Nube</span>
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary rounded-pill flex-fill py-2 d-flex align-items-center justify-content-center gap-1" style="min-height: 44px;" @onclick="TestCloudConnection">
+                        <span class="fs-sm">📡 Probar</span>
                     </button>
-                </div>
-                <div class="col-12 col-md-4">
-                    <button class="btn btn-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2" @onclick="SyncPushToCloud">
-                        <Icon Name="upload" Size="16" />
-                        <span>Subir Datos a la Nube</span>
-                    </button>
-                </div>
-                <div class="col-12 col-md-4">
-                    <button class="btn btn-outline-success w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2" @onclick="SyncPullFromCloud">
+                    <button class="btn btn-outline-primary rounded-pill flex-fill py-2 d-flex align-items-center justify-content-center gap-1" style="min-height: 44px;" @onclick="SyncPullFromCloud">
                         <Icon Name="download" Size="16" />
-                        <span>Descargar de la Nube</span>
+                        <span class="fs-sm">Descargar Nube</span>
                     </button>
                 </div>
             </div>
 
             @if (!string.IsNullOrEmpty(cloudStatusMessage))
             {
-                <div class="alert @(cloudStatusIsSuccess ? "alert-success" : "alert-warning") small py-2 mt-3 mb-0">
+                <div class="alert @(cloudStatusIsSuccess ? "alert-success" : "alert-warning") fs-xs py-2 mt-3 mb-0 rounded-3">
                     @cloudStatusMessage
                 </div>
             }
 
             @if (Sync.LastSyncTime.HasValue)
             {
-                <div class="text-muted small text-center mt-2">
+                <div class="fs-xxs text-muted text-center mt-2">
                     Última sincronización: @Sync.LastSyncTime.Value.ToString("g")
                 </div>
             }
         </div>
-    </div>
+    }
+    else if (activeTab == "backup")
+    {
+        <!-- SECCIÓN COPIAS DE SEGURIDAD JSON -->
+        <div class="card border rounded-3 p-3 bg-white shadow-xs mb-3">
+            <span class="fs-xs fw-bold text-uppercase tracking-wider text-muted d-block mb-3">
+                Exportar e Importar en Archivo JSON
+            </span>
 
-    <!-- PWA STATUS -->
-    <div class="card shadow-sm border-0 mb-4 bg-light">
-        <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-3">
-                <Icon Name="shield" Size="32" Class="text-success" />
-                <div>
-                    <h3 class="h6 fw-bold text-dark m-0">PWA Móvil Instalable & 100% Offline-First</h3>
-                    <small class="text-muted">
-                        Esta aplicación funciona de forma inmediata sin esperas. Todos los datos se guardan en el almacenamiento local de tu dispositivo y se sincronizan con Supabase cuando lo desees para ver lo mismo en tu PC y en tu móvil.
-                    </small>
+            <!-- Exportar -->
+            <div class="p-3 bg-slate-50 rounded-3 border mb-3">
+                <h6 class="fs-sm fw-bold text-slate-900 mb-1">Descargar Copia de Seguridad</h6>
+                <p class="fs-xs text-muted mb-3">
+                    Descarga un archivo <code>.json</code> completo con todas tus facturas, gastos, cuotas, fondos y deudas.
+                </p>
+                <button class="btn btn-outline-primary rounded-pill w-100 py-2 d-flex align-items-center justify-content-center gap-2" style="min-height: 44px;" @onclick="ExportBackup">
+                    <Icon Name="download" Size="16" />
+                    <span class="fs-sm fw-semibold">Exportar Backup JSON</span>
+                </button>
+            </div>
+
+            <!-- Importar -->
+            <div class="p-3 bg-slate-50 rounded-3 border">
+                <h6 class="fs-sm fw-bold text-slate-900 mb-1">Restaurar Copia de Seguridad</h6>
+                <p class="fs-xs text-muted mb-2">
+                    Selecciona un archivo JSON previamente exportado para recuperar tu contabilidad.
+                </p>
+                <div class="mb-2">
+                    <InputFile OnChange="HandleFileSelected" class="form-control form-control-sm" style="min-height: 40px;" accept=".json" />
+                </div>
+                @if (!string.IsNullOrEmpty(restoreMessage))
+                {
+                    <div class="alert alert-info fs-xs py-2 mt-2 mb-0 rounded-2">@restoreMessage</div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- SECCIÓN DATOS Y ESTADO PWA -->
+        <div class="d-flex flex-column gap-3 mb-3">
+            <div class="card border rounded-3 p-3 bg-white shadow-xs">
+                <span class="fs-xs fw-bold text-uppercase tracking-wider text-muted d-block mb-3">
+                    Gestión y Mantenimiento de Datos
+                </span>
+
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="pe-2">
+                            <span class="fs-sm fw-bold text-slate-800 d-block">Datos de Demostración</span>
+                            <span class="fs-xs text-muted">Recarga los clientes, gastos y fondos de prueba.</span>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 flex-shrink-0" style="min-height: 38px;" @onclick="LoadDemo">
+                            Recargar Demo
+                        </button>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <div class="pe-2">
+                            <span class="fs-sm fw-bold text-danger d-block">Vaciar Todo</span>
+                            <span class="fs-xs text-muted">Borra todas las operaciones para empezar de cero.</span>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3 flex-shrink-0" style="min-height: 38px;" @onclick="ClearAll">
+                            Empezar en Blanco
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PWA INFO -->
+            <div class="card border rounded-3 p-3 bg-white shadow-xs">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fs-3">🛡️</span>
+                    <div>
+                        <span class="fs-sm fw-bold text-slate-900 d-block">100% Offline-First & Privada</span>
+                        <p class="fs-xs text-muted m-0 mt-1">
+                            Todos los datos residen en el almacenamiento cifrado de tu dispositivo móvil. No hay intermediarios ni trackers.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 @code {
     [Inject] private SupabaseSyncService Sync { get; set; } = default!;
     [Inject] private SupabaseAuthService Auth { get; set; } = default!;
 
+    private string activeTab = "cloud";
     private decimal bankBalance;
     private string restoreMessage = "";
     private string cloudStatusMessage = "";
@@ -361,4 +366,3 @@
         Auth.OnSessionChanged -= StateHasChanged;
     }
 }
-

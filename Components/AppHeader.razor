@@ -9,35 +9,35 @@
         <!-- Logo / Marca -->
         <a href="" class="d-flex align-items-center gap-2 text-decoration-none">
             <span class="header-brand-badge">€</span>
-            <div class="d-flex flex-column justify-content-center">
-                <span class="fw-bold text-slate-900 fs-6 lh-sm">FinanzasPro</span>
-                <span class="fs-xs text-muted lh-1">Contabilidad Interna</span>
+            <div>
+                <div class="fw-bold text-white fs-6 lh-1">FinanzasPro</div>
+                <div class="fs-xs text-slate-400">Contabilidad Interna</div>
             </div>
         </a>
 
         <!-- Disponible Real y Acciones -->
         <div class="d-flex align-items-center gap-2">
             <div class="header-available-pill" title="Dinero Propio Realmente Disponible">
-                <span class="fs-xs text-muted me-1 fw-medium">Disp:</span>
-                <span class="fw-bold @(AppState.Data.RealAvailableCash >= 0 ? "text-available-positive" : "text-available-negative")">
+                <span class="fs-xs text-slate-300 me-1">Disp:</span>
+                <span class="fw-bold @(AppState.Data.RealAvailableCash >= 0 ? "text-emerald-400" : "text-rose-400")">
                     @AppState.Data.RealAvailableCash.ToString("N0") €
                 </span>
             </div>
 
             @if (canInstall)
             {
-                <button class="btn btn-xs btn-primary rounded-pill px-2.5 py-1 fs-xs d-flex align-items-center gap-1 shadow-xs" @onclick="InstallPwa" title="Instalar en tu móvil o PC">
+                <button class="btn btn-xs btn-primary rounded-pill px-2 py-1 fs-xs d-flex align-items-center gap-1 shadow-xs" @onclick="InstallPwa" title="Instalar en tu móvil o PC">
                     <Icon Name="download" Size="13" />
                     <span>Instalar</span>
                 </button>
             }
 
-            <a href="configuracion" class="header-icon-btn text-slate-700" title="Estado de Supabase (@(Sync.State == SyncState.Synced ? "Sincronizado" : "Local / Nube"))">
-                <span class="fs-xs">☁️</span>
+            <a href="configuracion" class="header-icon-btn text-slate-200" title="Estado de Supabase (@(Sync.State == SyncState.Synced ? "Sincronizado" : "Local / Nube"))">
+                <span class="fs-xs">@(Sync.State == SyncState.Synced ? "☁️" : "☁️")</span>
             </a>
 
-            <a href="menu" class="header-icon-btn text-slate-700" title="Ver todos los módulos">
-                <Icon Name="settings" Size="17" />
+            <a href="menu" class="header-icon-btn text-slate-200" title="Ver todos los módulos">
+                <Icon Name="settings" Size="18" />
             </a>
         </div>
     </div>
@@ -45,8 +45,8 @@
 
 <style>
     .app-mobile-header {
-        background-color: #ffffff;
-        border-bottom: 1px solid var(--border-default, #e2e8f0);
+        background-color: #0f172a;
+        border-bottom: 1px solid #1e293b;
         z-index: 1030;
     }
     .header-brand-badge {
@@ -55,46 +55,36 @@
         justify-content: center;
         width: 32px;
         height: 32px;
-        background-color: #18181b;
+        background: #18181b;
         color: #ffffff;
         font-weight: 800;
-        border-radius: 9px;
-        font-size: 0.95rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        flex-shrink: 0;
+        border-radius: 10px;
+        font-size: 1rem;
+        border: 1px solid #334155;
     }
     .header-available-pill {
-        background-color: var(--color-slate-100, #f1f5f9);
-        border: 1px solid var(--border-default, #e2e8f0);
+        background-color: #1e293b;
+        border: 1px solid #334155;
         border-radius: 20px;
         padding: 4px 10px;
         font-size: 0.8rem;
-        display: inline-flex;
-        align-items: center;
     }
-    .text-available-positive { 
-        color: #047857 !important; /* Esmeralda oscuro de alto contraste */
-    } 
-    .text-available-negative { 
-        color: #b91c1c !important; /* Rojo oscuro de alto contraste */
-    } 
+    .text-emerald-400 { color: #6ee7b7 !important; } /* Menta pastel suave */
+    .text-rose-400 { color: #fca5a5 !important; } /* Rosa pastel suave */
     .header-icon-btn {
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        background-color: #ffffff;
-        border: 1px solid var(--border-default, #e2e8f0);
+        background-color: #1e293b;
+        border: 1px solid #334155;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         text-decoration: none;
-        color: var(--color-slate-700, #334155);
-        transition: all 0.15s ease;
+        transition: background 0.15s ease;
     }
-    .header-icon-btn:hover,
-    .header-icon-btn:active {
-        background-color: var(--color-slate-100, #f1f5f9);
-        color: #09090b;
+    .header-icon-btn:hover {
+        background-color: #334155;
     }
 </style>
 

@@ -2,130 +2,266 @@
 @inject AppStateService AppState
 @implements IDisposable
 
-<div class="cashflow-container">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+<div class="mobile-cashflow-view p-3">
+    <!-- CABECERA MÓVIL IMPECCABLE -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h3 fw-bold text-slate-900 m-0">Previsión Financiera (Próximos Meses)</h1>
-            <p class="text-muted small m-0 mt-1">
-                Calendario de tesorería y flujo de caja proyectado a 6 meses. Detecta con antelación meses con baches de cobro (facturas a 90 días) y alta carga de gastos.
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-5">📅</span>
+                <h1 class="h5 fw-bold text-slate-900 m-0">Previsión Financiera</h1>
+            </div>
+            <p class="fs-xs text-muted m-0 mt-1">
+                Tesorería y flujo neto proyectado a 6 meses con facturas y compromisos.
             </p>
         </div>
     </div>
 
-    <!-- TARJETAS CON LA PROYECCIÓN A 6 MESES -->
-    <div class="row g-4">
-        @for (int monthOffset = 0; monthOffset < 6; monthOffset++)
+    @{
+        // Cálculo global de los 6 meses
+        decimal totalGlobalInflows = 0m;
+        decimal totalGlobalOutflows = 0m;
+        int deficitMonthsCount = 0;
+
+        var monthlyDataList = new List<MonthProjection>();
+
+        for (int i = 0; i < 6; i++)
         {
-            var targetDate = DateTime.Today.AddMonths(monthOffset);
+            var targetDate = DateTime.Today.AddMonths(i);
             int m = targetDate.Month;
             int y = targetDate.Year;
-            string monthName = targetDate.ToString("MMMM yyyy").ToUpper();
+            string labelShort = targetDate.ToString("MMM").ToUpper();
+            string labelFull = targetDate.ToString("MMMM yyyy");
 
-            // Cobros de facturas previstas para este mes
             var expectedInvoices = AppState.Data.Invoices
-                .Where(i => !i.IsCollected && i.ExpectedPaymentDate.Month == m && i.ExpectedPaymentDate.Year == y)
+                .Where(inv => !inv.IsCollected && inv.ExpectedPaymentDate.Month == m && inv.ExpectedPaymentDate.Year == y)
                 .ToList();
-            decimal totalExpectedInflows = expectedInvoices.Sum(i => i.PendingToCollect);
+            decimal inflows = expectedInvoices.Sum(inv => inv.PendingToCollect);
 
-            // Gastos fijos del mes
-            decimal fixedExpensesMonth = AppState.Data.FixedExpenses.Where(f => f.IsActive).Sum(f => f.MonthlyReserveAmount);
+            decimal fixedExp = AppState.Data.FixedExpenses.Where(f => f.IsActive).Sum(f => f.MonthlyReserveAmount);
 
-            // Reservas fiscales generadas o estimadas para el mes (IRPF exterior de facturas + cuotas de impuestos trimestrales en meses 1, 4, 7, 10)
-            bool isQuarterTaxMonth = (m == 1 || m == 4 || m == 7 || m == 10);
-            decimal taxReservesMonth = expectedInvoices.Sum(i => i.IrpfReserveAmount + i.VatAmount) + (isQuarterTaxMonth ? 450m : 0m);
+            bool isQuarterTax = (m == 1 || m == 4 || m == 7 || m == 10);
+            decimal taxes = expectedInvoices.Sum(inv => inv.IrpfReserveAmount + inv.VatAmount) + (isQuarterTax ? 450m : 0m);
 
-            // Cuotas del mes
-            decimal installmentsMonth = AppState.Data.Installments
-                .Where(i => !i.IsCompleted && i.RemainingInstallments >= monthOffset + 1)
-                .Sum(i => i.InstallmentAmount);
+            decimal inst = AppState.Data.Installments
+                .Where(instItem => !instItem.IsCompleted && instItem.RemainingInstallments >= i + 1)
+                .Sum(instItem => instItem.InstallmentAmount);
 
-            // Reposiciones previstas a fondos / préstamo
-            decimal fundRepaymentMonth = (monthOffset < 3 && AppState.Data.FamilyLoan.PendingTotal > 0) ? 500m : 0m;
+            decimal repayment = (i < 3 && AppState.Data.FamilyLoan.PendingTotal > 0) ? 500m : 0m;
 
-            decimal totalOutflows = fixedExpensesMonth + taxReservesMonth + installmentsMonth + fundRepaymentMonth;
-            decimal netProjectedFlow = totalExpectedInflows - totalOutflows;
+            decimal outflows = fixedExp + taxes + inst + repayment;
+            decimal netFlow = inflows - outflows;
 
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100 bg-white">
-                    <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-slate-900 fs-6">@monthName</span>
-                        @if (netProjectedFlow < 0)
-                        {
-                            <span class="badge bg-danger-subtle text-danger border px-2 py-1 fs-xs">Alerta Déficit</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-success-subtle text-success border px-2 py-1 fs-xs">Superávit</span>
-                        }
-                    </div>
-                    <div class="card-body p-4 d-flex flex-column justify-content-between">
-                        <div class="d-flex flex-column gap-2 mb-3">
-                            <!-- Entradas -->
-                            <div class="d-flex justify-content-between align-items-center text-success fw-semibold">
-                                <span>(+) Facturas previstas (@expectedInvoices.Count)</span>
-                                <span>+@totalExpectedInflows.ToString("N2") €</span>
-                            </div>
-                            @if (expectedInvoices.Any())
-                            {
-                                <div class="ps-3 border-start small text-muted">
-                                    @foreach (var inv in expectedInvoices)
-                                    {
-                                        <div class="d-flex justify-content-between align-items-center gap-2">
-                                            <span class="text-truncate" style="min-width:0;">• @inv.ClientName (@inv.ExpectedPaymentDate.ToString("dd/MM"))</span>
-                                            <span class="text-nowrap flex-shrink-0">+@inv.PendingToCollect.ToString("N2") €</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
+            if (netFlow < 0) deficitMonthsCount++;
+            totalGlobalInflows += inflows;
+            totalGlobalOutflows += outflows;
 
-                            <!-- Salidas -->
-                            <div class="d-flex justify-content-between align-items-center text-danger pt-2 border-top">
-                                <span>(-) Gastos fijos previstos</span>
-                                <span>-@fixedExpensesMonth.ToString("N2") €</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center text-danger">
-                                <span>(-) Impuestos / Reservas</span>
-                                <span>-@taxReservesMonth.ToString("N2") €</span>
-                            </div>
-                            @if (installmentsMonth > 0)
-                            {
-                                <div class="d-flex justify-content-between align-items-center text-danger">
-                                    <span>(-) Cuotas a plazos</span>
-                                    <span>-@installmentsMonth.ToString("N2") €</span>
-                                </div>
-                            }
-                            @if (fundRepaymentMonth > 0)
-                            {
-                                <div class="d-flex justify-content-between align-items-center text-danger">
-                                    <span>(-) Amortización préstamo familiar</span>
-                                    <span>-@fundRepaymentMonth.ToString("N2") €</span>
-                                </div>
-                            }
-                        </div>
+            monthlyDataList.Add(new MonthProjection
+            {
+                Offset = i,
+                Month = m,
+                Year = y,
+                LabelShort = labelShort,
+                LabelFull = labelFull,
+                Inflows = inflows,
+                Outflows = outflows,
+                NetFlow = netFlow,
+                Invoices = expectedInvoices,
+                FixedExpenses = fixedExp,
+                TaxReserves = taxes,
+                Installments = inst,
+                LoanRepayment = repayment
+            });
+        }
 
-                        <!-- RESULTADO PREVISTO DEL MES -->
-                        <div class="p-3 rounded-3 mt-2" style="@(netProjectedFlow >= 0 ? "background: var(--pastel-success-bg); border: 1px solid var(--pastel-success-border);" : "background: var(--pastel-danger-bg); border: 1px solid var(--pastel-danger-border);")">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="small fw-bold @(netProjectedFlow >= 0 ? "text-success" : "text-danger")">Resultado Previsto:</span>
-                                <span class="fs-5 fw-bold @(netProjectedFlow >= 0 ? "text-success" : "text-danger")">
-                                    @(netProjectedFlow >= 0 ? "+" : "")@netProjectedFlow.ToString("N2") €
-                                </span>
-                            </div>
-                            @if (netProjectedFlow < 0)
-                            {
-                                <small class="text-danger d-block mt-1 fs-xs">
-                                    ⚠️ Mes con tensión de tesorería: recurrir a @Math.Abs(netProjectedFlow).ToString("N2") € del colchón de liquidez.
-                                </small>
-                            }
-                        </div>
-                    </div>
+        decimal netGlobalProjection = totalGlobalInflows - totalGlobalOutflows;
+        var currentSelected = monthlyDataList.FirstOrDefault(x => x.Offset == selectedOffset) ?? monthlyDataList[0];
+    }
+
+    <!-- HERO CARD DARK: VISIÓN GLOBAL A 6 MESES -->
+    <div class="card hero-card-dark mb-3 overflow-hidden shadow-sm" style="background: linear-gradient(145deg, #18181b 0%, #27272a 100%); color: #ffffff; border-radius: 16px; border: 1px solid #3f3f46;">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <span class="fs-xs text-uppercase tracking-wider fw-semibold" style="color: #a1a1aa;">
+                    Flujo Neto Acumulado (6 Meses)
+                </span>
+                <span class="badge" style="@(deficitMonthsCount == 0 ? "background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4);" : "background: rgba(245, 158, 11, 0.25); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4);")">
+                    @(deficitMonthsCount == 0 ? "Flujo Sano" : $"{deficitMonthsCount} mes(es) con tensión")
+                </span>
+            </div>
+
+            <div class="d-flex align-items-baseline gap-2 my-2">
+                <h2 class="fs-2 fw-bold text-white mb-0">
+                    @(netGlobalProjection >= 0 ? "+" : "")@netGlobalProjection.ToString("N2") €
+                </h2>
+            </div>
+
+            <div class="row g-2 pt-2 border-top border-secondary border-opacity-25 mt-2">
+                <div class="col-6">
+                    <span class="fs-xs d-block" style="color: #a1a1aa;">Cobros esperados</span>
+                    <span class="fs-sm fw-bold text-emerald-400" style="color: #34d399;">+@totalGlobalInflows.ToString("N2") €</span>
+                </div>
+                <div class="col-6 text-end">
+                    <span class="fs-xs d-block" style="color: #a1a1aa;">Salidas proyectadas</span>
+                    <span class="fs-sm fw-bold text-rose-400" style="color: #f87171;">-@totalGlobalOutflows.ToString("N2") €</span>
                 </div>
             </div>
-        }
+        </div>
+    </div>
+
+    <!-- SELECTOR DE MES HORIZONTAL (TIPO PILLS) -->
+    <div class="mb-3">
+        <div class="d-flex gap-1 overflow-auto pb-1" style="scrollbar-width: none; -ms-overflow-style: none;">
+            @foreach (var mData in monthlyDataList)
+            {
+                bool isSel = mData.Offset == selectedOffset;
+                bool isDeficit = mData.NetFlow < 0;
+
+                <button class="btn btn-sm rounded-pill flex-fill text-nowrap px-3 py-2 d-flex flex-column align-items-center justify-content-center"
+                        style="@(isSel 
+                            ? "background: #18181b; color: #ffffff; border: 1px solid #18181b; font-weight: 700; min-height: 48px;" 
+                            : "background: #ffffff; color: #475569; border: 1px solid #e2e8f0; font-weight: 500; min-height: 48px;")"
+                        @onclick="() => selectedOffset = mData.Offset">
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="fs-xs">@mData.LabelShort</span>
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: @(isDeficit ? "#ef4444" : "#10b981");"></span>
+                    </div>
+                    <span class="fs-xxs @(isSel ? "text-slate-300" : (isDeficit ? "text-danger" : "text-success"))" style="font-size: 10px;">
+                        @(mData.NetFlow >= 0 ? "+" : "")@mData.NetFlow.ToString("N0")€
+                    </span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- TARJETA DETALLE DEL MES SELECCIONADO -->
+    <div class="card border rounded-3 p-3 bg-white shadow-xs mb-3">
+        <!-- Encabezado de mes seleccionado -->
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+                <span class="fs-xs text-muted text-uppercase fw-semibold d-block">Detalle del mes</span>
+                <h3 class="fs-6 fw-bold text-slate-900 m-0 text-capitalize">@currentSelected.LabelFull</h3>
+            </div>
+            <span class="badge @(currentSelected.NetFlow >= 0 ? "badge-pastel-success" : "badge-pastel-danger") fs-xs px-2 py-1">
+                @(currentSelected.NetFlow >= 0 ? "Superávit Proyectado" : "Alerta de Déficit")
+            </span>
+        </div>
+
+        <!-- Banner de Resultado Neto del Mes -->
+        <div class="p-3 rounded-3 mb-3" style="@(currentSelected.NetFlow >= 0 ? "background: var(--pastel-success-bg); border: 1px solid var(--pastel-success-border);" : "background: var(--pastel-danger-bg); border: 1px solid var(--pastel-danger-border);")">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fs-xs fw-bold @(currentSelected.NetFlow >= 0 ? "text-success" : "text-danger") text-uppercase">
+                    Resultado Previsto
+                </span>
+                <span class="fs-5 fw-bold @(currentSelected.NetFlow >= 0 ? "text-success" : "text-danger")">
+                    @(currentSelected.NetFlow >= 0 ? "+" : "")@currentSelected.NetFlow.ToString("N2") €
+                </span>
+            </div>
+            @if (currentSelected.NetFlow < 0)
+            {
+                <div class="fs-xs text-danger mt-1 pt-1 border-top border-danger border-opacity-25">
+                    ⚠️ Mes con tensión de tesorería: recurrir a @Math.Abs(currentSelected.NetFlow).ToString("N2") € del colchón de liquidez.
+                </div>
+            }
+        </div>
+
+        <!-- Sección Entradas Previstas -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fs-xs fw-bold text-uppercase tracking-wider text-emerald-700">
+                    📥 Facturas & Cobros (@currentSelected.Invoices.Count)
+                </span>
+                <span class="fs-sm fw-bold text-success">+@currentSelected.Inflows.ToString("N2") €</span>
+            </div>
+
+            @if (currentSelected.Invoices.Any())
+            {
+                <div class="d-flex flex-column gap-1 bg-slate-50 p-2 rounded-2 border">
+                    @foreach (var inv in currentSelected.Invoices)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light last-border-0">
+                            <div class="text-truncate pe-2">
+                                <span class="fs-xs fw-medium text-slate-800 d-block text-truncate">• @inv.ClientName</span>
+                                <span class="fs-xxs text-muted" style="font-size: 11px;">Pago esperado: @inv.ExpectedPaymentDate.ToString("dd/MM/yyyy")</span>
+                            </div>
+                            <span class="fs-xs fw-bold text-success text-nowrap">+@inv.PendingToCollect.ToString("N2") €</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-2 text-center bg-slate-50 rounded-2 border">
+                    <span class="fs-xs text-muted">Sin facturas emitidas pendientes con vencimiento en este mes.</span>
+                </div>
+            }
+        </div>
+
+        <!-- Sección Salidas Previstas -->
+        <div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fs-xs fw-bold text-uppercase tracking-wider text-rose-700">
+                    📤 Gastos & Compromisos
+                </span>
+                <span class="fs-sm fw-bold text-danger">-@currentSelected.Outflows.ToString("N2") €</span>
+            </div>
+
+            <div class="d-flex flex-column gap-2 bg-slate-50 p-2 rounded-2 border">
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="fs-xs text-slate-700">Gastos fijos & reservas</span>
+                    <span class="fs-xs fw-semibold text-danger">-@currentSelected.FixedExpenses.ToString("N2") €</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="fs-xs text-slate-700">Impuestos / Reservas IRPF & IVA</span>
+                    <span class="fs-xs fw-semibold text-danger">-@currentSelected.TaxReserves.ToString("N2") €</span>
+                </div>
+                @if (currentSelected.Installments > 0)
+                {
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <span class="fs-xs text-slate-700">Cuotas a plazos activas</span>
+                        <span class="fs-xs fw-semibold text-danger">-@currentSelected.Installments.ToString("N2") €</span>
+                    </div>
+                }
+                @if (currentSelected.LoanRepayment > 0)
+                {
+                    <div class="d-flex justify-content-between align-items-center py-1">
+                        <span class="fs-xs text-slate-700">Amortización préstamo familiar</span>
+                        <span class="fs-xs fw-semibold text-danger">-@currentSelected.LoanRepayment.ToString("N2") €</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- CALENDARIO RESUMEN COMPACTO DE LOS 6 MESES -->
+    <div class="card border rounded-3 p-3 bg-white shadow-xs mb-3">
+        <span class="fs-xs fw-bold text-uppercase tracking-wider text-muted d-block mb-2">
+            Línea Temporal de Tesorería
+        </span>
+        <div class="d-flex flex-column gap-2">
+            @foreach (var mData in monthlyDataList)
+            {
+                <div class="d-flex justify-content-between align-items-center p-2 rounded-2 @(mData.Offset == selectedOffset ? "border border-dark bg-slate-50" : "border-0 hover-bg-light")"
+                     style="cursor: pointer;"
+                     @onclick="() => selectedOffset = mData.Offset">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: @(mData.NetFlow >= 0 ? "#10b981" : "#ef4444");"></span>
+                        <span class="fs-xs fw-bold text-slate-800 text-capitalize">@mData.LabelFull</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fs-xs text-muted">(@mData.Inflows.ToString("N0")€ / -@mData.Outflows.ToString("N0")€)</span>
+                        <span class="fs-xs fw-bold @(mData.NetFlow >= 0 ? "text-success" : "text-danger")" style="min-width: 70px; text-align: right;">
+                            @(mData.NetFlow >= 0 ? "+" : "")@mData.NetFlow.ToString("N2") €
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
 @code {
+    private int selectedOffset = 0;
+
     protected override void OnInitialized()
     {
         AppState.OnChange += StateHasChanged;
@@ -134,5 +270,22 @@
     public void Dispose()
     {
         AppState.OnChange -= StateHasChanged;
+    }
+
+    private class MonthProjection
+    {
+        public int Offset { get; set; }
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public string LabelShort { get; set; } = "";
+        public string LabelFull { get; set; } = "";
+        public decimal Inflows { get; set; }
+        public decimal Outflows { get; set; }
+        public decimal NetFlow { get; set; }
+        public List<Invoice> Invoices { get; set; } = new();
+        public decimal FixedExpenses { get; set; }
+        public decimal TaxReserves { get; set; }
+        public decimal Installments { get; set; }
+        public decimal LoanRepayment { get; set; }
     }
 }
