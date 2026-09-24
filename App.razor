@@ -1,6 +1,33 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        <ErrorBoundary @ref="errorBoundary">
+            <ChildContent>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </ChildContent>
+            <ErrorContent Context="ex">
+                <div class="card shadow-sm border-0 p-4 m-3 text-center bg-white">
+                    <div class="text-danger fw-bold mb-2">⚠️ Error en la vista</div>
+                    <div class="small text-muted mb-3">@ex.Message</div>
+                    <button class="btn btn-primary rounded-pill btn-sm px-3" @onclick="() => errorBoundary?.Recover()">
+                        Reintentar
+                    </button>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
     </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <AppControlGastos.Pages.NotFound />
+        </LayoutView>
+    </NotFound>
 </Router>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    protected override void OnParametersSet()
+    {
+        errorBoundary?.Recover();
+    }
+}

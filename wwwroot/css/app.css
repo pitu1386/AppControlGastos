@@ -362,7 +362,7 @@ a:hover, .btn-link:hover {
 
 /* Errores Blazor (Oculto por defecto; Blazor lo muestra solo en caso de excepción no controlada) */
 #blazor-error-ui {
-    display: none;
+    display: none !important;
     background: #18181b;
     color: #f4f4f5;
     bottom: 0;
