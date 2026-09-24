@@ -813,4 +813,15 @@ public class AppStateService
             _ = SaveAsync();
         }
     }
+
+    public async Task SetFullDataAsync(AppData fullData)
+    {
+        if (fullData != null)
+        {
+            Data = fullData;
+            await SaveAsync();
+            NotifyStateChanged();
+        }
+    }
 }
+
