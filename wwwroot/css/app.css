@@ -88,6 +88,11 @@ h1:focus {
 /* ==========================================================================
    SUPERFICIES: TARJETAS Y CONTENEDORES
    ========================================================================== */
+.mobile-body-content > div,
+[class$="-container"],
+[class$="-view"] {
+    padding: 1rem;
+}
 .card {
     background-color: var(--surface-card) !important;
     border: 1px solid var(--border-default) !important;
