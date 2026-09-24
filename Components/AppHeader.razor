@@ -8,7 +8,7 @@
     <div class="d-flex align-items-center justify-content-between px-3 py-2">
         <!-- Logo / Marca -->
         <a href="" class="d-flex align-items-center gap-2 text-decoration-none">
-            <img src="icon.svg" alt="FinanzasPro" class="header-brand-img" width="32" height="32" />
+            <span class="header-brand-badge">€</span>
             <div>
                 <div class="fw-bold text-white fs-6 lh-1">FinanzasPro</div>
                 <div class="fs-xs text-slate-400">Contabilidad Interna</div>
@@ -49,10 +49,18 @@
         border-bottom: 1px solid #1e293b;
         z-index: 1030;
     }
-    .header-brand-img {
-        border-radius: 8px;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-        flex-shrink: 0;
+    .header-brand-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: #18181b;
+        color: #ffffff;
+        font-weight: 800;
+        border-radius: 10px;
+        font-size: 1rem;
+        border: 1px solid #334155;
     }
     .header-available-pill {
         background-color: #1e293b;

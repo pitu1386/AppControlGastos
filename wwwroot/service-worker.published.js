@@ -8,12 +8,11 @@ self.addEventListener('fetch', event => event.respondWith(onFetch(event)));
 
 const cacheNamePrefix = 'offline-cache-';
 const cacheName = `${cacheNamePrefix}${self.assetsManifest.version}`;
-const offlineAssetsInclude = [ /\.dll$/, /\.pdb$/, /\.wasm/, /\.html/, /\.js$/, /\.json$/, /\.css$/, /\.woff$/, /\.png$/, /\.jpe?g$/, /\.gif$/, /\.ico$/, /\.blat$/, /\.dat$/, /\.webmanifest$/ ];
+const offlineAssetsInclude = [ /\.dll$/, /\.pdb$/, /\.wasm/, /\.html/, /\.js$/, /\.json$/, /\.css$/, /\.woff$/, /\.png$/, /\.jpe?g$/, /\.gif$/, /\.ico$/, /\.svg$/, /\.blat$/, /\.dat$/, /\.webmanifest$/ ];
 const offlineAssetsExclude = [ /^service-worker\.js$/ ];
 
-// Replace with your base path if you are hosting on a subfolder. Ensure there is a trailing '/'.
-const base = "/";
-const baseUrl = new URL(base, self.origin);
+// Scope dinámico automático (funciona tanto en root "/" como en subcarpetas "/AppControlGastos/")
+const baseUrl = new URL(self.registration ? self.registration.scope : self.location.href);
 const manifestUrlList = self.assetsManifest.assets.map(asset => new URL(asset.url, baseUrl).href);
 
 async function onInstall(event) {
@@ -23,7 +22,15 @@ async function onInstall(event) {
     const assetsRequests = self.assetsManifest.assets
         .filter(asset => offlineAssetsInclude.some(pattern => pattern.test(asset.url)))
         .filter(asset => !offlineAssetsExclude.some(pattern => pattern.test(asset.url)))
-        .map(asset => new Request(asset.url, { integrity: asset.hash, cache: 'no-cache' }));
+        .map(asset => {
+            const assetUrl = new URL(asset.url, baseUrl).href;
+            // Para index.html (cuyo base href cambia al publicar en GitHub Pages), omitir SRI para evitar bloqueos
+            if (asset.url.endsWith('index.html') || asset.url === 'index.html') {
+                return new Request(assetUrl, { cache: 'no-cache' });
+            }
+            return new Request(assetUrl, { integrity: asset.hash, cache: 'no-cache' });
+        });
+
     await caches.open(cacheName).then(cache => cache.addAll(assetsRequests));
 }
 
@@ -42,11 +49,10 @@ async function onFetch(event) {
     if (event.request.method === 'GET') {
         // For all navigation requests, try to serve index.html from cache,
         // unless that request is for an offline resource.
-        // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
         const shouldServeIndexHtml = event.request.mode === 'navigate'
             && !manifestUrlList.some(url => url === event.request.url);
 
-        const request = shouldServeIndexHtml ? 'index.html' : event.request;
+        const request = shouldServeIndexHtml ? new URL('index.html', baseUrl).href : event.request;
         const cache = await caches.open(cacheName);
         cachedResponse = await cache.match(request);
     }

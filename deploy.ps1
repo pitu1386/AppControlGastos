@@ -51,6 +51,24 @@ if ($wasmJs) {
 }
 [System.IO.File]::WriteAllText($indexPath, $content, [System.Text.Encoding]::UTF8)
 
+# Recalcular hash de index.html para service-worker-assets.js (Evitar fallo de SRI)
+$swAssetsPath = ".\publish_output\wwwroot\service-worker-assets.js"
+if (Test-Path $swAssetsPath) {
+    Write-Host "Actualizando hash SHA-256 de index.html en service-worker-assets.js..." -ForegroundColor Gray
+    $bytes = [System.IO.File]::ReadAllBytes($indexPath)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $hash = [Convert]::ToBase64String($sha256.ComputeHash($bytes))
+    $newHash = "sha256-$hash"
+    
+    $swContent = [System.IO.File]::ReadAllText($swAssetsPath, [System.Text.Encoding]::UTF8)
+    $swContent = [System.Text.RegularExpressions.Regex]::Replace(
+        $swContent,
+        '("hash":\s*"sha256-[^"]+",\s*"url":\s*"index\.html")',
+        """hash"": ""$newHash"",`n        ""url"": ""index.html"""
+    )
+    [System.IO.File]::WriteAllText($swAssetsPath, $swContent, [System.Text.Encoding]::UTF8)
+}
+
 # Copiar index.html como 404.html para soporte de enrutamiento SPA en GitHub Pages
 Copy-Item -Path $indexPath -Destination ".\publish_output\wwwroot\404.html" -Force
 
