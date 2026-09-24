@@ -380,3 +380,52 @@ a:hover, .btn-link:hover {
     right: 0.75rem;
     top: 0.5rem;
 }
+
+/* ==========================================================================
+   COMPONENTES MÓVILES AVANZADOS (IMPECCABLE)
+   ========================================================================== */
+.segmented-control {
+    display: flex;
+    background-color: var(--color-slate-100);
+    padding: 3px;
+    border-radius: 12px;
+    gap: 3px;
+    width: 100%;
+}
+
+.segmented-item {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-slate-500);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.segmented-item.active {
+    background-color: #ffffff;
+    color: var(--color-slate-900);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.category-icon-bubble {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background-color: var(--color-slate-100);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.hover-bg-light:active {
+    background-color: var(--color-slate-50);
+}
