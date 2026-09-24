@@ -1,0 +1,385 @@
+@page "/proyectos"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="projects-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Proyectos & Calculadora de Horas (€/h)</h1>
+            <p class="text-muted small m-0 mt-1">
+                Seguimiento de proyectos de interiorismo/diseño, registro de horas facturables vs gestión, y cálculo de rentabilidad neta real por hora.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1" @onclick="() => showCalculator = !showCalculator">
+                <Icon Name="calculator" Size="16" />
+                <span>@(showCalculator ? "Ocultar Calculadora" : "Calculadora €/h Neta")</span>
+            </button>
+            <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddProjectModal">
+                <Icon Name="plus" Size="16" />
+                <span>Nuevo Proyecto</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- CALCULADORA DE TARIFA NETA REAL (PUNTO 19) -->
+    @if (showCalculator)
+    {
+        <div class="card shadow-sm border-0 mb-4 bg-white border-top border-4 border-indigo">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <Icon Name="calculator" Size="20" Class="text-indigo" />
+                        <h2 class="h6 fw-bold m-0 text-slate-900">Calculadora: ¿Cuánto me queda realmente por hora?</h2>
+                    </div>
+                    <span class="badge bg-indigo-subtle text-indigo border">Rentabilidad Real Autónomo</span>
+                </div>
+
+                <div class="row g-4 align-items-center">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold">Tarifa Bruta al Cliente (€/h)</label>
+                        <div class="input-group">
+                            <input type="number" step="1" class="form-control fw-bold" @bind="calcHourlyRate" />
+                            <span class="input-group-text">€/h</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold">Horas Trabajadas Totales / día</label>
+                        <input type="number" step="0.5" class="form-control" @bind="calcTotalDailyHours" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold">Horas Facturables Reales / día</label>
+                        <input type="number" step="0.5" class="form-control" @bind="calcBillableDailyHours" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold">Reserva IRPF / Fiscal (%)</label>
+                        <input type="number" step="1" class="form-control" @bind="calcTaxRate" />
+                    </div>
+                </div>
+
+                <!-- RESULTADOS DE LA CALCULADORA -->
+                @{
+                    decimal billableRatio = calcTotalDailyHours > 0 ? (calcBillableDailyHours / calcTotalDailyHours) : 0.75m;
+                    decimal effectiveGrossRate = calcHourlyRate * billableRatio;
+                    decimal taxReservePerHour = effectiveGrossRate * (calcTaxRate / 100m);
+                    
+                    // Costes fijos mensuales profesionales divididos por horas facturables mensuales estimadas (ej. 100h)
+                    decimal monthlyFixed = AppState.Data.FixedExpenses.Where(f => f.IsActive && f.Scope == ExpenseScope.Profesional).Sum(f => f.MonthlyReserveAmount);
+                    decimal estimatedMonthlyHours = 100m;
+                    decimal fixedCostPerHour = estimatedMonthlyHours > 0 ? Math.Round(monthlyFixed / estimatedMonthlyHours, 2) : 3.50m;
+                    
+                    decimal netHourlyProfit = Math.Round(effectiveGrossRate - taxReservePerHour - fixedCostPerHour, 2);
+                }
+                <div class="row g-3 mt-2 pt-3 border-top">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="small text-muted d-block">Tarifa Facturada al Cliente</span>
+                            <span class="fw-bold text-dark fs-5">@calcHourlyRate.ToString("N2") €/h</span>
+                            <div class="fs-xs text-muted">Precio nominal de contrato</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="small text-muted d-block">Tarifa Real (por horas trabajadas)</span>
+                            <span class="fw-bold text-primary fs-5">@effectiveGrossRate.ToString("N2") €/h</span>
+                            <div class="fs-xs text-muted">@calcBillableDailyHours h facturables de @calcTotalDailyHours h dedicadas</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="small text-muted d-block">Coste Fijo (Autónomos + Software)</span>
+                            <span class="fw-bold text-danger fs-5">-@fixedCostPerHour.ToString("N2") €/h</span>
+                            <div class="fs-xs text-muted">@monthlyFixed.ToString("N2") € fijos prorrateados</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="p-3 rounded-3 bg-emerald-50 border border-emerald-200">
+                            <span class="small text-emerald-800 fw-semibold d-block">Beneficio Neto Real Limpio</span>
+                            <span class="fw-bolder text-emerald-700 fs-4">@netHourlyProfit.ToString("N2") €/h</span>
+                            <div class="fs-xs text-emerald-600">Lo que realmente te queda en el bolsillo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- METRICAS DE PROYECTOS ACTIVOS -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-primary">
+                <span class="text-muted small fw-semibold text-uppercase">Ingresos Potenciales Pendientes</span>
+                <span class="fs-4 fw-bold text-primary mt-1">
+                    @AppState.Data.ProjectsPotentialIncome.ToString("N2") €
+                </span>
+                <small class="text-muted">Horas restantes estimadas × Tarifa acordada</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-success">
+                <span class="text-muted small fw-semibold text-uppercase">Valor Generado Hasta la Fecha</span>
+                <span class="fs-4 fw-bold text-success mt-1">
+                    @AppState.Data.Projects.Sum(p => p.ValueGenerated).ToString("N2") €
+                </span>
+                <small class="text-muted">Según horas facturables ya ejecutadas</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-info">
+                <span class="text-muted small fw-semibold text-uppercase">Horas Facturables vs No Facturables</span>
+                <span class="fs-4 fw-bold text-info mt-1">
+                    @AppState.Data.Projects.Sum(p => p.BillableHoursWorked) h / @AppState.Data.Projects.Sum(p => p.NonBillableHoursWorked) h
+                </span>
+                <small class="text-muted">Gestión interna, llamadas, emails no facturados</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- FICHAS DE PROYECTOS (PUNTO 20) -->
+    <div class="row g-4">
+        @if (!AppState.Data.Projects.Any())
+        {
+            <div class="col-12">
+                <div class="card shadow-sm border-0 p-5 text-center text-muted">
+                    <h5>No tienes proyectos registrados</h5>
+                    <p class="small">Crea tu primer proyecto para imputar horas y calcular la previsión de ingresos.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var proj in AppState.Data.Projects)
+            {
+                <div class="col-12 col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="h6 fw-bold m-0 text-dark">@proj.Name</h2>
+                                <small class="text-muted">Cliente: @proj.Client • @proj.HourlyRate.ToString("N2") €/h</small>
+                            </div>
+                            <span class="badge @(proj.Status == ProjectStatusType.EnCurso ? "bg-primary" : "bg-success") px-2 py-1">
+                                @proj.Status
+                            </span>
+                        </div>
+                        <div class="card-body p-4">
+                            <!-- METRICAS DE LA FICHA -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <span class="small text-muted d-block">Horas Imputadas</span>
+                                    <span class="fw-bold text-dark fs-5">
+                                        @proj.BillableHoursWorked / @proj.EstimatedHours h
+                                    </span>
+                                    <div class="fs-xs text-muted">(@proj.ProgressPercentage% completado)</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="small text-muted d-block">Valor Generado</span>
+                                    <span class="fw-bold text-success fs-5">
+                                        @proj.ValueGenerated.ToString("N2") €
+                                    </span>
+                                    <div class="fs-xs text-muted">Presupuesto: @proj.EstimatedBudget.ToString("N2") €</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="progress" style="height: 10px; border-radius: 6px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: @proj.ProgressPercentage%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-light rounded-3 border mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="small text-muted">Ingresos potenciales pendientes:</span>
+                                    <strong class="text-primary">@proj.PotentialPendingIncome.ToString("N2") €</strong>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span class="small text-muted">Horas de gestión / no facturables:</span>
+                                    <span class="small fw-semibold text-secondary">@proj.NonBillableHoursWorked h</span>
+                                </div>
+                            </div>
+
+                            <!-- REGISTRO RECIENTE DE HORAS -->
+                            <div class="mb-3">
+                                <span class="fw-bold small text-muted text-uppercase fs-xs d-block mb-2">Últimas Horas Imputadas</span>
+                                @if (!proj.WorkLogs.Any())
+                                {
+                                    <small class="text-muted">No se han registrado partes de horas todavía.</small>
+                                }
+                                else
+                                {
+                                    <ul class="list-group list-group-flush border-top">
+                                        @foreach (var log in proj.WorkLogs.Take(3))
+                                        {
+                                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center small">
+                                                <div>
+                                                    <span class="fw-semibold">@log.Date.ToString("dd/MM"): @log.Hours h</span>
+                                                    <span class="text-muted ms-1">(@log.Description)</span>
+                                                </div>
+                                                <span class="badge @(log.Type == HourLogType.Facturable ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary")">
+                                                    @(log.Type == HourLogType.Facturable ? "Facturable" : "Gestión")
+                                                </span>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-2">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProject(proj.Id)">
+                                    <Icon Name="trash" Size="14" />
+                                </button>
+                                <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="() => OpenAddHoursModal(proj)">
+                                    <Icon Name="plus" Size="14" />
+                                    <span>Imputar Horas</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- MODAL CREAR PROYECTO -->
+<ModalDialog IsOpen="isProjectModalOpen" Title="Nuevo Proyecto" OnClose="() => isProjectModalOpen = false">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label small fw-semibold">Nombre del Proyecto</label>
+                <input type="text" class="form-control" @bind="newProject.Name" placeholder="Ej. Calle X — Interiorismo" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Cliente</label>
+                <input type="text" class="form-control" @bind="newProject.Client" placeholder="Nombre cliente" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Tarifa Acordada (€/h)</label>
+                <input type="number" step="1" class="form-control" @bind="newProject.HourlyRate" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Horas Estimadas</label>
+                <input type="number" step="5" class="form-control" @bind="newProject.EstimatedHours" />
+            </div>
+            <div class="col-12 bg-light p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Presupuesto estimado total:</span>
+                    <strong class="text-dark fs-5">@newProject.EstimatedBudget.ToString("N2") €</strong>
+                </div>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isProjectModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveProject">Crear Proyecto</button>
+    </Footer>
+</ModalDialog>
+
+<!-- MODAL IMPUTAR HORAS -->
+<ModalDialog IsOpen="isHoursModalOpen" Title="Imputar Horas al Proyecto" OnClose="() => isHoursModalOpen = false">
+    <ChildContent>
+        @if (selectedProjectForHours != null)
+        {
+            <div class="mb-3">
+                <p>Imputando horas al proyecto: <strong>@selectedProjectForHours.Name</strong> (@selectedProjectForHours.HourlyRate.ToString("N2") €/h)</p>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Fecha</label>
+                    <input type="date" class="form-control" @bind="logDate" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Número de Horas</label>
+                    <input type="number" step="0.5" class="form-control" @bind="logHours" />
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label small fw-semibold">Tipo de Horas</label>
+                    <select class="form-select" @bind="logType">
+                        <option value="@HourLogType.Facturable">Horas Facturables (Diseño, planos, ejecución directa)</option>
+                        <option value="@HourLogType.GestionYReuniones">Gestión / Reuniones / Coordinación proveedores</option>
+                        <option value="@HourLogType.NoFacturable">No facturable / Tareas administrativas</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-semibold">Descripción de la Tarea</label>
+                    <input type="text" class="form-control" @bind="logDescription" placeholder="Ej. Modelado 3D de cocina y selección de materiales..." />
+                </div>
+                @if (logType == HourLogType.Facturable)
+                {
+                    <div class="col-12 bg-light p-3 rounded-3 text-end">
+                        <span class="small text-muted me-2">Valor generado con estas horas:</span>
+                        <strong class="text-success fs-5">@((logHours * selectedProjectForHours.HourlyRate).ToString("N2")) €</strong>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isHoursModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveWorkLog">Guardar Horas</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool showCalculator = true;
+    private decimal calcHourlyRate = 35m;
+    private decimal calcTotalDailyHours = 8m;
+    private decimal calcBillableDailyHours = 6m;
+    private decimal calcTaxRate = 20m;
+
+    private bool isProjectModalOpen = false;
+    private Project newProject = new();
+
+    private bool isHoursModalOpen = false;
+    private Project? selectedProjectForHours;
+    private decimal logHours = 4m;
+    private HourLogType logType = HourLogType.Facturable;
+    private string logDescription = "";
+    private DateTime logDate = DateTime.Today;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenAddProjectModal()
+    {
+        newProject = new Project { HourlyRate = 35m, EstimatedHours = 100m };
+        isProjectModalOpen = true;
+    }
+
+    private async Task SaveProject()
+    {
+        if (string.IsNullOrWhiteSpace(newProject.Name)) return;
+        await AppState.AddProjectAsync(newProject);
+        isProjectModalOpen = false;
+    }
+
+    private void OpenAddHoursModal(Project proj)
+    {
+        selectedProjectForHours = proj;
+        logHours = 4m;
+        logType = HourLogType.Facturable;
+        logDescription = "";
+        logDate = DateTime.Today;
+        isHoursModalOpen = true;
+    }
+
+    private async Task SaveWorkLog()
+    {
+        if (selectedProjectForHours != null && logHours > 0)
+        {
+            await AppState.AddWorkLogAsync(selectedProjectForHours.Id, logHours, logType, logDescription, logDate);
+            isHoursModalOpen = false;
+        }
+    }
+
+    private async Task DeleteProject(string id)
+    {
+        await AppState.DeleteProjectAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

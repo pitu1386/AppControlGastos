@@ -1,0 +1,374 @@
+@page "/fondos-familia"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="family-funds-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Dinero de Familia & Terceros (Multidivisa)</h1>
+            <p class="text-muted small m-0 mt-1">
+                Gestión de préstamos familiares (padres), dinero administrado de terceros en EUR, USD y ARS con tipo de cambio, y adelantos pendientes de cobro.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-danger rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenRepaymentModal">
+                <Icon Name="arrow-up-right" Size="16" />
+                <span>Devolver a Padres</span>
+            </button>
+            <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenFamilyItemModal">
+                <Icon Name="plus" Size="16" />
+                <span>Nuevo Movimiento Familia</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 1: PRÉSTAMO DE LOS PADRES (PUNTO 17) -->
+    <div class="card shadow-sm border-0 mb-4 border-start border-4 border-danger">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">Préstamo Familiar Padres</span>
+                    <h2 class="h4 fw-bold text-slate-900 mt-1 mb-2">
+                        Pendiente de Devolver: <span class="text-danger">@AppState.Data.FamilyLoan.PendingTotal.ToString("N2") €</span>
+                    </h2>
+                    <p class="text-muted small m-0">
+                        Préstamo inicial acordado: <strong>@AppState.Data.FamilyLoan.InitialAmount.ToString("N2") €</strong> • 
+                        Total amortizado hasta hoy: <strong>@AppState.Data.FamilyLoan.RepaidTotal.ToString("N2") €</strong> (@AppState.Data.FamilyLoan.ProgressPercentage%).
+                        Este dinero no es patrimonio propio y se descuenta del disponible real.
+                    </p>
+                    <div class="mt-3" style="max-width: 500px;">
+                        <div class="progress" style="height: 10px; border-radius: 6px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: @AppState.Data.FamilyLoan.ProgressPercentage%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                    <button class="btn btn-danger rounded-pill px-4 py-2" @onclick="OpenRepaymentModal">
+                        Amortizar Préstamo (-500 €)
+                    </button>
+                </div>
+            </div>
+
+            <!-- HISTORIAL DE AMORTIZACIONES A PADRES -->
+            @if (AppState.Data.FamilyLoan.Repayments.Any())
+            {
+                <div class="mt-4 pt-3 border-top">
+                    <span class="fw-bold small text-muted text-uppercase fs-xs d-block mb-2">Historial de Reposiciones a Padres</span>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var rep in AppState.Data.FamilyLoan.Repayments)
+                        {
+                            <span class="badge bg-light text-dark border px-3 py-2 small">
+                                @rep.Date.ToString("dd/MM/yyyy"): <strong>-@rep.Amount.ToString("N2") €</strong> (@rep.Note)
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- SECCIÓN 2: CONSOLIDACIÓN MULTIDIVISA (PUNTOS 21, 22, 23) -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-secondary">
+                <span class="text-muted small fw-semibold text-uppercase">Dinero Administrado de Terceros</span>
+                <span class="fs-4 fw-bold text-secondary mt-1">@AppState.Data.ThirdPartyMoney.ToString("N2") €</span>
+                <small class="text-muted">Dinero en cuenta que debes gastar en encargos o devolver</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-success">
+                <span class="text-muted small fw-semibold text-uppercase">Dinero que Familia te Debe</span>
+                <span class="fs-4 fw-bold text-success mt-1">@AppState.Data.MoneyFamilyOwesMe.ToString("N2") €</span>
+                <small class="text-muted">Adelantos realizados por ti pendientes de recuperar</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-info">
+                <span class="text-muted small fw-semibold text-uppercase">Desglose por Divisas Originales</span>
+                <div class="small mt-1 fw-semibold text-slate-800">
+                    USD: @AppState.Data.FamilyFundItems.Where(f => f.OriginalCurrency == CurrencyType.USD && !f.IsSettled).Sum(f => f.OriginalAmount).ToString("N0") $ •
+                    ARS: @AppState.Data.FamilyFundItems.Where(f => f.OriginalCurrency == CurrencyType.ARS && !f.IsSettled).Sum(f => f.OriginalAmount).ToString("N0") ARS
+                </div>
+                <small class="text-muted">Consolidado en EUR al tipo de cambio acordado</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA DE FONDOS DE FAMILIA Y ENCARGOS -->
+    <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <h2 class="h6 fw-bold m-0 text-dark">Fondos de Familia, Encargos y Adelantos</h2>
+            <span class="badge bg-light text-muted border">@AppState.Data.FamilyFundItems.Count registros</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-modern m-0">
+                <thead>
+                    <tr>
+                        <th>Persona</th>
+                        <th>Dirección</th>
+                        <th>Divisa Original</th>
+                        <th>Tipo Cambio</th>
+                        <th>Equivalente EUR</th>
+                        <th>Finalidad / Para qué</th>
+                        <th>Gastado (EUR)</th>
+                        <th class="text-end">Saldo Restante</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!AppState.Data.FamilyFundItems.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">
+                                No hay fondos o encargos familiares registrados.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in AppState.Data.FamilyFundItems)
+                        {
+                            <tr class="@(item.IsSettled ? "opacity-50" : "")">
+                                <td class="fw-bold text-dark">@item.Person</td>
+                                <td>
+                                    @if (item.Direction == DirectionType.RecibidoParaAdministrar)
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border">
+                                            Recibido para administrar
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success-subtle text-success border">
+                                            Adelantado por mí (a devolver)
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        @item.OriginalAmount.ToString("N2") @item.OriginalCurrency
+                                    </span>
+                                </td>
+                                <td class="small text-muted">
+                                    1 @item.OriginalCurrency = @item.ExchangeRate.ToString("0.00##") €
+                                    <div class="fs-xs text-muted">(@item.ExchangeRateDate.ToString("dd/MM/yy"))</div>
+                                </td>
+                                <td class="fw-semibold text-dark">@item.EurEquivalent.ToString("N2") €</td>
+                                <td class="small text-slate-800">@item.Purpose</td>
+                                <td class="small text-muted">@item.SpentEur.ToString("N2") €</td>
+                                <td class="text-end fw-bold @(item.Direction == DirectionType.AdelantadoPorMi ? "text-success" : "text-danger")">
+                                    @item.RemainingEur.ToString("N2") €
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        @if (!item.IsSettled && item.RemainingEur > 0)
+                                        {
+                                            <button class="btn btn-outline-primary" title="Registrar gasto de este fondo" @onclick="() => OpenRecordExpenseModal(item)">
+                                                - Gasto
+                                            </button>
+                                            <button class="btn btn-outline-success" title="Marcar como liquidado" @onclick="() => SettleItem(item.Id)">
+                                                <Icon Name="check" Size="14" />
+                                            </button>
+                                        }
+                                        <button class="btn btn-outline-danger" title="Eliminar" @onclick="() => DeleteFamilyItem(item.Id)">
+                                            <Icon Name="trash" Size="14" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DEVOLUCIÓN A PADRES -->
+<ModalDialog IsOpen="isRepaymentModalOpen" Title="Amortizar Préstamo de Padres" OnClose="() => isRepaymentModalOpen = false">
+    <ChildContent>
+        <div class="mb-3">
+            <p>Saldo pendiente actual: <strong>@AppState.Data.FamilyLoan.PendingTotal.ToString("N2") €</strong>.</p>
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Importe a Devolver (€)</label>
+            <input type="number" step="10" class="form-control" @bind="repaymentAmount" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Concepto / Nota</label>
+            <input type="text" class="form-control" @bind="repaymentNote" />
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isRepaymentModalOpen = false">Cancelar</button>
+        <button class="btn btn-danger" @onclick="SaveRepayment">Registrar Amortización</button>
+    </Footer>
+</ModalDialog>
+
+<!-- MODAL NUEVO MOVIMIENTO FAMILIA -->
+<ModalDialog IsOpen="isFamilyItemModalOpen" Title="Nuevo Fondo o Adelanto Familiar" OnClose="() => isFamilyItemModalOpen = false">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Familiar / Persona</label>
+                <input type="text" class="form-control" @bind="newFamilyItem.Person" placeholder="Ej. Mamá, Papá, Hermano..." />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Tipo de Operación</label>
+                <select class="form-select" @bind="newFamilyItem.Direction">
+                    <option value="@DirectionType.RecibidoParaAdministrar">Dinero recibido para administrar</option>
+                    <option value="@DirectionType.AdelantadoPorMi">Compré / Adelanté algo (a devolver por la familia)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Moneda Original</label>
+                <select class="form-select" @bind="newFamilyItem.OriginalCurrency" @bind:after="OnCurrencyChanged">
+                    <option value="@CurrencyType.USD">USD ($)</option>
+                    <option value="@CurrencyType.EUR">EUR (€)</option>
+                    <option value="@CurrencyType.ARS">ARS ($)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Importe Original</label>
+                <input type="number" step="0.01" class="form-control" @bind="newFamilyItem.OriginalAmount" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Tipo Cambio (1 Divisa = X EUR)</label>
+                <input type="number" step="0.0001" class="form-control" @bind="newFamilyItem.ExchangeRate" />
+            </div>
+            <div class="col-12">
+                <label class="form-label small fw-semibold">Finalidad / Concepto</label>
+                <input type="text" class="form-control" @bind="newFamilyItem.Purpose" placeholder="Ej. Compra personal encargada, billete avión..." />
+            </div>
+            <div class="col-12 bg-light p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Equivalente consolidado en euros:</span>
+                    <strong class="text-dark fs-5">@newFamilyItem.EurEquivalent.ToString("N2") €</strong>
+                </div>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isFamilyItemModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveFamilyItem">Guardar Movimiento</button>
+    </Footer>
+</ModalDialog>
+
+<!-- MODAL REGISTRAR GASTO DE UN FONDO -->
+<ModalDialog IsOpen="isSpendModalOpen" Title="Registrar Gasto de este Fondo" OnClose="() => isSpendModalOpen = false">
+    <ChildContent>
+        @if (selectedItemForSpend != null)
+        {
+            <div class="mb-3">
+                <p>Fondo de <strong>@selectedItemForSpend.Person</strong> (@selectedItemForSpend.Purpose). Saldo disponible: <strong>@selectedItemForSpend.RemainingEur.ToString("N2") €</strong>.</p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Importe gastado en EUR (€)</label>
+                <input type="number" step="0.01" class="form-control" @bind="spendAmount" max="@selectedItemForSpend.RemainingEur" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Concepto del gasto</label>
+                <input type="text" class="form-control" @bind="spendReason" placeholder="Ej. Compra en tienda..." />
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isSpendModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="ConfirmSpend">Aplicar Gasto</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isRepaymentModalOpen = false;
+    private decimal repaymentAmount = 500m;
+    private string repaymentNote = "Transferencia amortización mensual";
+
+    private bool isFamilyItemModalOpen = false;
+    private FamilyFundItem newFamilyItem = new();
+
+    private bool isSpendModalOpen = false;
+    private FamilyFundItem? selectedItemForSpend;
+    private decimal spendAmount = 50m;
+    private string spendReason = "";
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenRepaymentModal()
+    {
+        repaymentAmount = 500m;
+        repaymentNote = "Reposición préstamo familiar";
+        isRepaymentModalOpen = true;
+    }
+
+    private async Task SaveRepayment()
+    {
+        if (repaymentAmount <= 0) return;
+        await AppState.AddFamilyLoanRepaymentAsync(repaymentAmount, repaymentNote);
+        isRepaymentModalOpen = false;
+    }
+
+    private void OpenFamilyItemModal()
+    {
+        newFamilyItem = new FamilyFundItem
+        {
+            Person = "Mamá",
+            OriginalCurrency = CurrencyType.USD,
+            OriginalAmount = 500,
+            ExchangeRate = 0.92m,
+            ExchangeRateDate = DateTime.Today,
+            Direction = DirectionType.RecibidoParaAdministrar,
+            Purpose = "Compra personal"
+        };
+        isFamilyItemModalOpen = true;
+    }
+
+    private void OnCurrencyChanged()
+    {
+        if (newFamilyItem.OriginalCurrency == CurrencyType.USD) newFamilyItem.ExchangeRate = 0.92m;
+        else if (newFamilyItem.OriginalCurrency == CurrencyType.EUR) newFamilyItem.ExchangeRate = 1.0m;
+        else if (newFamilyItem.OriginalCurrency == CurrencyType.ARS) newFamilyItem.ExchangeRate = 0.00075m;
+    }
+
+    private async Task SaveFamilyItem()
+    {
+        if (string.IsNullOrWhiteSpace(newFamilyItem.Person) || newFamilyItem.OriginalAmount <= 0) return;
+        await AppState.AddFamilyFundItemAsync(newFamilyItem);
+        isFamilyItemModalOpen = false;
+    }
+
+    private void OpenRecordExpenseModal(FamilyFundItem item)
+    {
+        selectedItemForSpend = item;
+        spendAmount = Math.Min(50m, item.RemainingEur);
+        spendReason = "Gasto realizado";
+        isSpendModalOpen = true;
+    }
+
+    private async Task ConfirmSpend()
+    {
+        if (selectedItemForSpend != null && spendAmount > 0)
+        {
+            await AppState.RecordFamilyExpenseAsync(selectedItemForSpend.Id, spendAmount, spendReason);
+            isSpendModalOpen = false;
+        }
+    }
+
+    private async Task SettleItem(string id)
+    {
+        await AppState.SettleFamilyItemAsync(id);
+    }
+
+    private async Task DeleteFamilyItem(string id)
+    {
+        await AppState.DeleteFamilyFundItemAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

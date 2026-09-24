@@ -1,0 +1,125 @@
+<div class="top-row ps-3 navbar navbar-dark bg-slate-900 border-bottom border-slate-800">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white fs-6 m-0" href="">
+            <span class="brand-badge">€</span>
+            <span>FinanzasPro</span>
+        </a>
+        <button title="Menú de navegación" class="navbar-toggler border-0" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable bg-slate-900" @onclick="ToggleNavMenu">
+    <nav class="nav flex-column py-2">
+        <div class="nav-section-title px-3 pt-2 pb-1 text-slate-400 text-uppercase fw-bold fs-xs">
+            PANEL GENERAL
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="" Match="NavLinkMatch.All">
+                <Icon Name="chart" Size="18" Class="me-2 text-emerald-400" /> Panel Principal
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="salud-financiera">
+                <Icon Name="shield" Size="18" Class="me-2 text-teal-400" /> Salud Financiera (5 Tipos)
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title px-3 pt-3 pb-1 text-slate-400 text-uppercase fw-bold fs-xs">
+            ACTIVIDAD & FACTURACIÓN
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="facturas">
+                <Icon Name="invoice" Size="18" Class="me-2 text-sky-400" /> Facturación & Cobros
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="proyectos">
+                <Icon Name="briefcase" Size="18" Class="me-2 text-indigo-400" /> Proyectos & Horas (€/h)
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="gastos-fijos">
+                <Icon Name="repeat" Size="18" Class="me-2 text-amber-400" /> Gastos Fijos & Reservas
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title px-3 pt-3 pb-1 text-slate-400 text-uppercase fw-bold fs-xs">
+            GASTOS & CONTROL
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="gastos">
+                <Icon Name="expense" Size="18" Class="me-2 text-rose-400" /> Registro de Gastos
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="gastos-compartidos">
+                <Icon Name="users" Size="18" Class="me-2 text-pink-400" /> Gastos Pareja
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="cuotas">
+                <Icon Name="credit-card" Size="18" Class="me-2 text-orange-400" /> Gastos en Cuotas
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="presupuestos">
+                <Icon Name="tag" Size="18" Class="me-2 text-yellow-400" /> Presupuestos Mensuales
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title px-3 pt-3 pb-1 text-slate-400 text-uppercase fw-bold fs-xs">
+            FONDOS & DEUDAS
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="fondo-liquidez">
+                <Icon Name="shield" Size="18" Class="me-2 text-blue-400" /> Colchón de Liquidez
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="fondos-familia">
+                <Icon Name="globe" Size="18" Class="me-2 text-emerald-300" /> Dinero Familia & Préstamos
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="ahorro">
+                <Icon Name="piggy-bank" Size="18" Class="me-2 text-violet-400" /> Objetivos de Ahorro
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title px-3 pt-3 pb-1 text-slate-400 text-uppercase fw-bold fs-xs">
+            ANÁLISIS & CIERRES
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="prevision">
+                <Icon Name="calendar" Size="18" Class="me-2 text-cyan-400" /> Previsión Próximos Meses
+            </NavLink>
+        </div>
+        <div class="nav-item px-2">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="informes">
+                <Icon Name="chart" Size="18" Class="me-2 text-lime-400" /> Informe Mensual Cierres
+            </NavLink>
+        </div>
+
+        <div class="nav-section-title px-3 pt-3 pb-1 text-slate-400 text-uppercase fw-bold fs-xs">
+            SISTEMA
+        </div>
+        <div class="nav-item px-2 mb-4">
+            <NavLink class="nav-link py-2 px-3 rounded-2 text-slate-200" href="configuracion">
+                <Icon Name="settings" Size="18" Class="me-2 text-slate-300" /> Ajustes & Respaldo
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

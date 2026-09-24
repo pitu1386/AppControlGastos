@@ -1,0 +1,89 @@
+@inherits LayoutComponentBase
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="mobile-viewport-wrapper">
+    <div class="mobile-device-frame">
+        <!-- Barra Superior Móvil -->
+        <AppHeader />
+
+        <!-- Contenido Central con Scroll Móvil -->
+        <main class="mobile-body-content">
+            @if (!AppState.IsInitialized)
+            {
+                <div class="d-flex flex-column justify-content-center align-items-center py-5 my-5">
+                    <div class="spinner-border text-emerald-500" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <span class="small text-muted mt-3">Iniciando contabilidad interna...</span>
+                </div>
+            }
+            else
+            {
+                @Body
+            }
+        </main>
+
+        <!-- Barra Inferior de Pestañas Móvil -->
+        <BottomNav />
+    </div>
+</div>
+
+<style>
+    /* Estructura Mobile-First (igual que AppPoblenou) */
+    .mobile-viewport-wrapper {
+        min-height: 100vh;
+        min-height: 100dvh;
+        background-color: #0b1329; /* Fondo exterior oscuro y elegante en escritorio */
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 0;
+    }
+
+    .mobile-device-frame {
+        width: 100%;
+        max-width: 500px; /* Ancho idéntico a smartphone */
+        min-height: 100vh;
+        min-height: 100dvh;
+        background-color: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+    }
+
+    .mobile-body-content {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 24px;
+    }
+
+    /* En pantallas medianas y grandes (PC / Mac), simular marco de smartphone */
+    @@media (min-width: 576px) {
+        .mobile-viewport-wrapper {
+            padding: 20px 0;
+            background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+        }
+        .mobile-device-frame {
+            min-height: calc(100vh - 40px);
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    }
+</style>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.OnChange += StateHasChanged;
+        await AppState.InitializeAsync();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

@@ -1,0 +1,113 @@
+@inject NavigationManager Nav
+
+<nav class="app-bottom-nav">
+    <div class="bottom-nav-inner">
+        <NavLink class="nav-tab" href="" Match="NavLinkMatch.All">
+            <div class="nav-tab-icon">
+                <Icon Name="chart" Size="20" />
+            </div>
+            <span class="nav-tab-label">Inicio</span>
+        </NavLink>
+
+        <NavLink class="nav-tab" href="facturas">
+            <div class="nav-tab-icon">
+                <Icon Name="invoice" Size="20" />
+            </div>
+            <span class="nav-tab-label">Facturas</span>
+        </NavLink>
+
+        <NavLink class="nav-tab" href="gastos">
+            <div class="nav-tab-icon">
+                <Icon Name="expense" Size="20" />
+            </div>
+            <span class="nav-tab-label">Gastos</span>
+        </NavLink>
+
+        <NavLink class="nav-tab" href="gastos-compartidos">
+            <div class="nav-tab-icon">
+                <Icon Name="users" Size="20" />
+            </div>
+            <span class="nav-tab-label">Pareja</span>
+        </NavLink>
+
+        <NavLink class="nav-tab" href="cuotas">
+            <div class="nav-tab-icon">
+                <Icon Name="credit-card" Size="20" />
+            </div>
+            <span class="nav-tab-label">Cuotas</span>
+        </NavLink>
+
+        <NavLink class="nav-tab" href="menu">
+            <div class="nav-tab-icon">
+                <Icon Name="settings" Size="20" />
+            </div>
+            <span class="nav-tab-label">Más</span>
+        </NavLink>
+    </div>
+</nav>
+
+<style>
+    .app-bottom-nav {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid #e2e8f0;
+        z-index: 1040;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .bottom-nav-inner {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        height: 58px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    .nav-tab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-decoration: none;
+        color: #64748b;
+        transition: all 0.15s ease;
+        padding: 4px 0;
+    }
+
+    .nav-tab-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+    }
+
+    .nav-tab-label {
+        font-size: 0.65rem;
+        font-weight: 500;
+        margin-top: 2px;
+        letter-spacing: -0.01em;
+    }
+
+    .nav-tab:hover {
+        color: #0f172a;
+    }
+
+    .nav-tab.active {
+        color: #10b981;
+        font-weight: 700;
+    }
+
+    .nav-tab.active .nav-tab-icon {
+        transform: translateY(-1px);
+    }
+</style>

@@ -1,0 +1,44 @@
+@code {
+    [Parameter] public decimal Current { get; set; }
+    [Parameter] public decimal Target { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? CurrentFormatted { get; set; }
+    [Parameter] public string? TargetFormatted { get; set; }
+    [Parameter] public bool InvertAlert { get; set; } = false; // Si true (ahorro), 100% es verde. Si false (presupuesto), >90% es rojo.
+
+    private decimal Percentage => Target > 0 ? Math.Round((Current / Target) * 100m, 1) : 0m;
+    private decimal BarWidth => Math.Min(100m, Math.Max(0m, Percentage));
+
+    private string ColorClass
+    {
+        get
+        {
+            if (InvertAlert)
+            {
+                // Para Ahorro: más es mejor
+                if (Percentage >= 100) return "bg-success";
+                if (Percentage >= 50) return "bg-primary";
+                return "bg-info";
+            }
+            else
+            {
+                // Para Presupuesto: más es peligroso
+                if (Percentage > 100) return "bg-danger";
+                if (Percentage >= 80) return "bg-warning";
+                return "bg-success";
+            }
+        }
+    }
+}
+
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="fw-medium small text-dark">@(Label ?? "Progreso")</span>
+        <span class="small fw-semibold @(Percentage > 100 && !InvertAlert ? "text-danger" : "text-muted")">
+            @(CurrentFormatted ?? $"{Current:N2} €") / @(TargetFormatted ?? $"{Target:N2} €") (@Percentage%)
+        </span>
+    </div>
+    <div class="progress" style="height: 8px; border-radius: 6px; background-color: #e2e8f0;">
+        <div class="progress-bar @ColorClass" role="progressbar" style="width: @BarWidth.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%; transition: width 0.4s ease;" aria-valuenow="@BarWidth" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+</div>

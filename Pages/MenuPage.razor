@@ -1,0 +1,267 @@
+@page "/menu"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="mobile-menu-container p-3">
+    <div class="mb-3">
+        <h1 class="h4 fw-bold text-slate-900 m-0">Menú de Herramientas</h1>
+        <p class="text-muted small m-0 mt-1">Todos los módulos y funcionalidades de tu contabilidad.</p>
+    </div>
+
+    <!-- TARJETA RÁPIDA DE SALUD FINANCIERA -->
+    <a href="salud-financiera" class="card shadow-sm border-0 mb-3 text-decoration-none text-white overflow-hidden" style="background: linear-gradient(135deg, #065f46, #047857);">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fs-xs text-uppercase tracking-wider text-emerald-200 fw-bold">Salud Financiera</span>
+                <div class="h5 fw-bold text-white m-0">Los 5 Tipos de Dinero</div>
+                <small class="text-emerald-100 fs-xs">Disponible real: @AppState.Data.RealAvailableCash.ToString("N0") €</small>
+            </div>
+            <Icon Name="shield" Size="28" Class="text-emerald-300" />
+        </div>
+    </a>
+
+    <!-- SECCIÓN 1: ACTIVIDAD PROFESIONAL -->
+    <div class="menu-section-title text-uppercase text-muted fw-bold fs-xs mb-2">
+        Actividad Profesional & Facturación
+    </div>
+    <div class="card shadow-sm border-0 mb-3 overflow-hidden">
+        <div class="list-group list-group-flush">
+            <a href="facturas" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-sky-subtle text-sky">
+                        <Icon Name="invoice" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Facturación & Cobros</div>
+                        <div class="fs-xs text-muted">Bélgica, España, reservas IRPF y cobros a 90 días</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="proyectos" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-indigo-subtle text-indigo">
+                        <Icon Name="briefcase" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Proyectos & Calculadora (€/h)</div>
+                        <div class="fs-xs text-muted">Horas facturables vs gestión y rentabilidad neta</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="gastos-fijos" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-amber-subtle text-amber">
+                        <Icon Name="repeat" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Gastos Fijos & Reservas</div>
+                        <div class="fs-xs text-muted">Autónomos, gestoría, software y reservas mensuales</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 2: CONTROL Y DEUDAS -->
+    <div class="menu-section-title text-uppercase text-muted fw-bold fs-xs mb-2">
+        Gastos, Pareja y Fondos
+    </div>
+    <div class="card shadow-sm border-0 mb-3 overflow-hidden">
+        <div class="list-group list-group-flush">
+            <a href="gastos" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-rose-subtle text-rose">
+                        <Icon Name="expense" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Registro de Gastos</div>
+                        <div class="fs-xs text-muted">Profesional, Personal y Compartido</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="gastos-compartidos" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-pink-subtle text-pink">
+                        <Icon Name="users" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Gastos con Pareja</div>
+                        <div class="fs-xs text-muted">Aportes y saldo acumulado pendiente</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="cuotas" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-orange-subtle text-orange">
+                        <Icon Name="credit-card" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Compras en Cuotas</div>
+                        <div class="fs-xs text-muted">Compras fraccionadas (Argentina 3 de 7)</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="presupuestos" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-yellow-subtle text-yellow">
+                        <Icon Name="tag" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Presupuestos Mensuales</div>
+                        <div class="fs-xs text-muted">Techos por categoría con alertas</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="fondo-liquidez" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-blue-subtle text-blue">
+                        <Icon Name="shield" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Colchón de Liquidez</div>
+                        <div class="fs-xs text-muted">Retiros temporales y reposición al cobrar</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="fondos-familia" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-emerald-subtle text-emerald">
+                        <Icon Name="globe" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Familia & Terceros (Multidivisa)</div>
+                        <div class="fs-xs text-muted">Préstamo de padres (8.000 €) y divisas USD/ARS</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="ahorro" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-purple-subtle text-purple">
+                        <Icon Name="piggy-bank" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Objetivos de Ahorro</div>
+                        <div class="fs-xs text-muted">Meta mensual (500 €) y huchas temáticas</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 3: INFORMES Y PREVISIÓN -->
+    <div class="menu-section-title text-uppercase text-muted fw-bold fs-xs mb-2">
+        Previsión & Cierres
+    </div>
+    <div class="card shadow-sm border-0 mb-3 overflow-hidden">
+        <div class="list-group list-group-flush">
+            <a href="prevision" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-cyan-subtle text-cyan">
+                        <Icon Name="calendar" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Previsión Próximos Meses</div>
+                        <div class="fs-xs text-muted">Calendario Cash Flow a 6 meses con facturas pendientes</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+
+            <a href="informes" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-lime-subtle text-lime">
+                        <Icon Name="chart" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Informe Mensual Automático</div>
+                        <div class="fs-xs text-muted">Cierre mensual y beneficio contable vs real</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 4: AJUSTES -->
+    <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+        <div class="list-group list-group-flush">
+            <a href="configuracion" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-3 px-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="menu-icon-pill bg-secondary-subtle text-secondary">
+                        <Icon Name="settings" Size="18" />
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Ajustes & Respaldo JSON</div>
+                        <div class="fs-xs text-muted">Saldo bancario, exportar/importar backup y demo</div>
+                    </div>
+                </div>
+                <span class="text-muted small">&rarr;</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .menu-icon-pill {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bg-sky-subtle { background-color: #e0f2fe; }
+    .text-sky { color: #0284c7; }
+    .bg-indigo-subtle { background-color: #e0e7ff; }
+    .text-indigo { color: #4338ca; }
+    .bg-amber-subtle { background-color: #fef3c7; }
+    .text-amber { color: #b45309; }
+    .bg-rose-subtle { background-color: #ffe4e6; }
+    .text-rose { color: #e11d48; }
+    .bg-pink-subtle { background-color: #fce7f3; }
+    .text-pink { color: #db2777; }
+    .bg-orange-subtle { background-color: #ffedd5; }
+    .text-orange { color: #ea580c; }
+    .bg-yellow-subtle { background-color: #fef9c3; }
+    .text-yellow { color: #ca8a04; }
+    .bg-blue-subtle { background-color: #dbeafe; }
+    .text-blue { color: #2563eb; }
+    .bg-emerald-subtle { background-color: #d1fae5; }
+    .text-emerald { color: #059669; }
+    .bg-purple-subtle { background-color: #f3e8ff; }
+    .text-purple { color: #7e22ce; }
+    .bg-cyan-subtle { background-color: #cffafe; }
+    .text-cyan { color: #0891b2; }
+    .bg-lime-subtle { background-color: #ecfccb; }
+    .text-lime { color: #65a30d; }
+</style>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

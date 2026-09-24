@@ -1,0 +1,350 @@
+@page "/gastos-compartidos"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="shared-expenses-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Gastos Compartidos & Pareja</h1>
+            <p class="text-muted small m-0 mt-1">
+                Control de aportes, gastos comunes de vivienda/convivencia y regularizaciones acumuladas sin mezclar con los gastos individuales.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddSharedExpenseModal">
+                <Icon Name="plus" Size="16" />
+                <span>Nuevo Gasto Compartido</span>
+            </button>
+            <button class="btn btn-outline-success rounded-pill px-3 d-flex align-items-center gap-1" @onclick="OpenTransferModal">
+                <Icon Name="repeat" Size="16" />
+                <span>Registrar Transferencia / Ajuste</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TARJETA DESTACADA: BALANCE CON LA PAREJA (PUNTO 18) -->
+    @{
+        decimal netDebt = AppState.Data.CalculatePartnerDebt();
+    }
+    <div class="card shadow-sm border-0 mb-4 @(netDebt > 0 ? "border-start border-4 border-danger" : (netDebt < 0 ? "border-start border-4 border-success" : "border-start border-4 border-secondary"))">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">Estado de Liquidación Acumulado</span>
+                    <h2 class="h3 fw-bold mt-1 mb-2">
+                        @if (netDebt > 0)
+                        {
+                            <span class="text-danger">Debes a tu pareja: @netDebt.ToString("N2") €</span>
+                        }
+                        else if (netDebt < 0)
+                        {
+                            <span class="text-success">Tu pareja te debe: @(Math.Abs(netDebt).ToString("N2")) €</span>
+                        }
+                        else
+                        {
+                            <span class="text-secondary">Cuentas completamente saldadas (0,00 €)</span>
+                        }
+                    </h2>
+                    <p class="text-muted small m-0">
+                        Este balance acumula todos los gastos compartidos pagados por cada uno menos las transferencias de ajuste realizadas. 
+                        No necesitas liquidar cada mes; el saldo se arrastra automáticamente.
+                    </p>
+                </div>
+                <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                    @if (netDebt > 0)
+                    {
+                        <button class="btn btn-success px-4 py-2 rounded-pill shadow-xs" @onclick="() => QuickPayPartner(netDebt)">
+                            Regularizar Deuda (@netDebt.ToString("N2") €)
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INDICADORES RESUMEN -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Total Gastos Comunes</span>
+                <span class="fs-4 fw-bold text-dark mt-1">@SharedExpenses.Sum(e => e.Amount).ToString("N2") €</span>
+                <small class="text-muted">100% de los gastos compartidos</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Tu Parte Correspondiente</span>
+                <span class="fs-4 fw-bold text-primary mt-1">@SharedExpenses.Sum(e => e.UserShareAmount).ToString("N2") €</span>
+                <small class="text-muted">Lo que te corresponde cubrir</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Pagado Directamente por Ti</span>
+                <span class="fs-4 fw-bold text-info mt-1">
+                    @SharedExpenses.Where(e => e.PaidBy == "Yo").Sum(e => e.Amount).ToString("N2") €
+                </span>
+                <small class="text-muted">Desembolsado de tu cuenta</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Pagado por tu Pareja</span>
+                <span class="fs-4 fw-bold text-secondary mt-1">
+                    @SharedExpenses.Where(e => e.PaidBy == "Pareja").Sum(e => e.Amount).ToString("N2") €
+                </span>
+                <small class="text-muted">Desembolsado por su parte</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- LISTADO DE GASTOS COMPARTIDOS -->
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h2 class="h6 fw-bold m-0 text-dark">Gastos Compartidos Incluidos</h2>
+                    <span class="badge bg-light text-muted border">@SharedExpenses.Count() registros</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-modern m-0">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Concepto</th>
+                                <th>Pagó</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Mi Parte (%)</th>
+                                <th class="text-end">Parte Pareja</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!SharedExpenses.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        No hay gastos compartidos registrados aún.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var exp in SharedExpenses.OrderByDescending(e => e.Date))
+                                {
+                                    <tr>
+                                        <td>@exp.Date.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <div class="fw-semibold text-slate-800">@exp.Concept</div>
+                                            <small class="text-muted">@exp.Category</small>
+                                        </td>
+                                        <td>
+                                            @if (exp.PaidBy == "Yo")
+                                            {
+                                                <span class="badge bg-primary-subtle text-primary border">Pagué Yo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning border">Pagó Pareja</span>
+                                            }
+                                        </td>
+                                        <td class="text-end fw-bold text-dark">@exp.Amount.ToString("N2") €</td>
+                                        <td class="text-end text-primary fw-semibold">
+                                            @exp.UserShareAmount.ToString("N2") € (@exp.SharedPercentageUser%)
+                                        </td>
+                                        <td class="text-end text-muted">
+                                            @exp.PartnerShareAmount.ToString("N2") €
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORIAL DE TRANSFERENCIAS Y AJUSTES -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h2 class="h6 fw-bold m-0 text-dark">Transferencias de Regularización</h2>
+                    <button class="btn btn-xs btn-outline-primary" @onclick="OpenTransferModal">+ Ajuste</button>
+                </div>
+                <div class="card-body p-0">
+                    @if (!AppState.Data.PartnerPayments.Any())
+                    {
+                        <div class="text-center py-4 text-muted small p-3">
+                            No hay transferencias de liquidación registradas aún.
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var payment in AppState.Data.PartnerPayments.OrderByDescending(p => p.Date))
+                            {
+                                <li class="list-group-item px-3 py-3 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold text-slate-800 small">@payment.Concept</div>
+                                        <small class="text-muted">@payment.Date.ToString("dd/MM/yyyy") • @(payment.FromWhom == "Yo" ? "Transferido a Pareja" : "Recibido de Pareja")</small>
+                                    </div>
+                                    <span class="fw-bold fs-6 @(payment.FromWhom == "Yo" ? "text-success" : "text-primary")">
+                                        @(payment.FromWhom == "Yo" ? "-" : "+")@payment.Amount.ToString("N2") €
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL GASTO COMPARTIDO -->
+<ModalDialog IsOpen="isExpenseModalOpen" Title="Registrar Gasto Compartido" OnClose="() => isExpenseModalOpen = false">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label small fw-semibold">Concepto</label>
+                <input type="text" class="form-control" @bind="newSharedExpense.Concept" placeholder="Ej. Compra supermercado, Alquiler piso, Cena..." />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Importe (€)</label>
+                <input type="number" step="0.01" class="form-control" @bind="newSharedExpense.Amount" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Fecha</label>
+                <input type="date" class="form-control" @bind="newSharedExpense.Date" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Categoría</label>
+                <select class="form-select" @bind="newSharedExpense.Category">
+                    <option value="Vivienda">Vivienda</option>
+                    <option value="Alimentación">Alimentación</option>
+                    <option value="Ocio">Ocio</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">¿Quién realizó el pago?</label>
+                <select class="form-select" @bind="newSharedExpense.PaidBy">
+                    <option value="Yo">Pagué Yo</option>
+                    <option value="Pareja">Pagó mi Pareja</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">% que me corresponde a mí</label>
+                <input type="number" class="form-control" @bind="newSharedExpense.SharedPercentageUser" min="0" max="100" />
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isExpenseModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveSharedExpense">Guardar Gasto Compartido</button>
+    </Footer>
+</ModalDialog>
+
+<!-- MODAL TRANSFERENCIA / AJUSTE CON PAREJA -->
+<ModalDialog IsOpen="isTransferModalOpen" Title="Registrar Transferencia / Ajuste con Pareja" OnClose="() => isTransferModalOpen = false">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label small fw-semibold">Concepto</label>
+                <input type="text" class="form-control" @bind="transferConcept" placeholder="Ej. Pago a pareja regularización septiembre" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Importe (€)</label>
+                <input type="number" step="0.01" class="form-control" @bind="transferAmount" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Dirección del Pago</label>
+                <select class="form-select" @bind="transferFrom">
+                    <option value="Yo">Yo pagué a mi pareja</option>
+                    <option value="Pareja">Mi pareja me transfirió a mí</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Fecha</label>
+                <input type="date" class="form-control" @bind="transferDate" />
+            </div>
+            <div class="col-12 text-muted small">
+                Este movimiento amortizará el balance pendiente con tu pareja y actualizará tu saldo bancario real.
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isTransferModalOpen = false">Cancelar</button>
+        <button class="btn btn-success" @onclick="SaveTransfer">Registrar Transferencia</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isExpenseModalOpen = false;
+    private Expense newSharedExpense = new() { Scope = ExpenseScope.Compartido };
+
+    private bool isTransferModalOpen = false;
+    private string transferConcept = "Transferencia a pareja";
+    private decimal transferAmount = 0;
+    private string transferFrom = "Yo";
+    private DateTime transferDate = DateTime.Today;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private IEnumerable<Expense> SharedExpenses => AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Compartido);
+
+    private void OpenAddSharedExpenseModal()
+    {
+        newSharedExpense = new Expense 
+        { 
+            Date = DateTime.Today,
+            Scope = ExpenseScope.Compartido,
+            SharedPercentageUser = 50m,
+            PaidBy = "Yo",
+            Category = "Alimentación"
+        };
+        isExpenseModalOpen = true;
+    }
+
+    private async Task SaveSharedExpense()
+    {
+        if (string.IsNullOrWhiteSpace(newSharedExpense.Concept) || newSharedExpense.Amount <= 0) return;
+        newSharedExpense.Scope = ExpenseScope.Compartido;
+        await AppState.AddExpenseAsync(newSharedExpense);
+        isExpenseModalOpen = false;
+    }
+
+    private void OpenTransferModal()
+    {
+        decimal debt = AppState.Data.CalculatePartnerDebt();
+        transferAmount = debt > 0 ? debt : 0;
+        transferConcept = $"Pago regularización {DateTime.Today:MMMM}";
+        transferFrom = "Yo";
+        transferDate = DateTime.Today;
+        isTransferModalOpen = true;
+    }
+
+    private void QuickPayPartner(decimal amount)
+    {
+        transferAmount = amount;
+        transferConcept = "Regularización total de saldo con pareja";
+        transferFrom = "Yo";
+        transferDate = DateTime.Today;
+        isTransferModalOpen = true;
+    }
+
+    private async Task SaveTransfer()
+    {
+        if (transferAmount <= 0) return;
+        await AppState.AddPartnerPaymentAsync(transferAmount, transferConcept, transferFrom);
+        isTransferModalOpen = false;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

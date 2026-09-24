@@ -1,0 +1,187 @@
+@page "/configuracion"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="settings-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Ajustes & Respaldo de Datos</h1>
+            <p class="text-muted small m-0 mt-1">
+                Configura tu saldo bancario real, crea copias de seguridad en archivo JSON y restaura tus datos cuando lo necesites.
+            </p>
+        </div>
+    </div>
+
+    <!-- SALDO BANCARIO INMEDIATO -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h2 class="h6 fw-bold m-0 text-slate-900">Saldo Actual en Cuenta Bancaria</h2>
+        </div>
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold">Saldo total reflejado en tu banco (€)</label>
+                    <div class="input-group">
+                        <input type="number" step="10" class="form-control form-control-lg fw-bold" @bind="bankBalance" />
+                        <button class="btn btn-primary px-4" @onclick="UpdateBankBalance">Actualizar Saldo</button>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                        Este es el saldo que ves en tu app bancaria antes de aplicar las reservas fiscales y compromisos.
+                    </small>
+                </div>
+                <div class="col-12 col-md-6 text-md-end">
+                    <div class="p-3 bg-light rounded-3 d-inline-block text-start">
+                        <span class="small text-muted d-block">Disponible Real resultante:</span>
+                        <span class="fs-4 fw-bold @(AppState.Data.RealAvailableCash >= 0 ? "text-success" : "text-danger")">
+                            @AppState.Data.RealAvailableCash.ToString("N2") €
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h2 class="h6 fw-bold m-0 text-slate-900">Copias de Seguridad (Backup JSON)</h2>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-12 col-md-6">
+                    <h3 class="h6 fw-bold text-dark">Descargar Copia de Seguridad</h3>
+                    <p class="small text-muted">
+                        Descarga un archivo <code>.json</code> completo con todas tus facturas, gastos, cuotas, proyectos, deudas y fondos. Puedes guardarlo en tu ordenador o nube.
+                    </p>
+                    <button class="btn btn-outline-primary rounded-pill px-4 d-flex align-items-center gap-2" @onclick="ExportBackup">
+                        <Icon Name="download" Size="16" />
+                        <span>Exportar Backup JSON</span>
+                    </button>
+                </div>
+
+                <div class="col-12 col-md-6 border-start-md">
+                    <h3 class="h6 fw-bold text-dark">Restaurar Copia de Seguridad</h3>
+                    <p class="small text-muted">
+                        Selecciona un archivo JSON previamente exportado para recuperar toda tu información contable al instante.
+                    </p>
+                    <div class="mb-3">
+                        <InputFile OnChange="HandleFileSelected" class="form-control form-control-sm" accept=".json" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(restoreMessage))
+                    {
+                        <div class="alert alert-info small py-2">@restoreMessage</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATOS DE DEMOSTRACIÓN Y REINICIO -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h2 class="h6 fw-bold m-0 text-slate-900">Gestión de Datos</h2>
+        </div>
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h3 class="h6 fw-bold text-dark m-0">Cargar Datos de Demostración Realistas</h3>
+                    <small class="text-muted">
+                        Rellena el programa con los datos de ejemplo (clientes de Bélgica a 90 días, autónomos 320€, gestoría 90€, cuotas de Argentina, préstamo familiar, mamá 500 USD).
+                    </small>
+                </div>
+                <button class="btn btn-outline-secondary rounded-pill px-4" @onclick="LoadDemo">
+                    Recargar Datos de Ejemplo
+                </button>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h3 class="h6 fw-bold text-danger m-0">Vaciar Todos los Datos</h3>
+                    <small class="text-muted">
+                        Borra todas las transacciones para comenzar tu contabilidad completamente limpia desde cero.
+                    </small>
+                </div>
+                <button class="btn btn-outline-danger rounded-pill px-4" @onclick="ClearAll">
+                    Empezar en Blanco
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA STATUS -->
+    <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3">
+                <Icon Name="shield" Size="32" Class="text-success" />
+                <div>
+                    <h3 class="h6 fw-bold text-dark m-0">PWA Instalable & 100% Offline</h3>
+                    <small class="text-muted">
+                        Esta aplicación funciona íntegramente en tu navegador sin enviar tus datos financieros a ningún servidor externo. 
+                        Todos los datos se guardan de forma privada en el almacenamiento local de tu dispositivo. 
+                        Puedes instalarla como app de escritorio o móvil desde el navegador (icono de instalación en la barra de direcciones).
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private decimal bankBalance;
+    private string restoreMessage = "";
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+        bankBalance = AppState.Data.BankAccountBalance;
+    }
+
+    private async Task UpdateBankBalance()
+    {
+        await AppState.SetBankAccountBalanceAsync(bankBalance);
+    }
+
+    private async Task ExportBackup()
+    {
+        await AppState.DownloadBackupAsync();
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file != null)
+            {
+                using var reader = new System.IO.StreamReader(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+                var content = await reader.ReadToEndAsync();
+                bool ok = await AppState.RestoreBackupAsync(content);
+                restoreMessage = ok ? "✅ Copia de seguridad restaurada correctamente." : "❌ Error al leer el archivo JSON.";
+                bankBalance = AppState.Data.BankAccountBalance;
+            }
+        }
+        catch (Exception ex)
+        {
+            restoreMessage = $"❌ Error: {ex.Message}";
+        }
+    }
+
+    private void LoadDemo()
+    {
+        AppState.LoadDemoData(saveImmediately: true);
+        bankBalance = AppState.Data.BankAccountBalance;
+    }
+
+    private async Task ClearAll()
+    {
+        await AppState.ResetAllDataAsync();
+        bankBalance = 0;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

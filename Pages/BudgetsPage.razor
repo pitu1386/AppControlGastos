@@ -1,0 +1,183 @@
+@page "/presupuestos"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="budgets-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Presupuestos Mensuales</h1>
+            <p class="text-muted small m-0 mt-1">
+                Establece techos de gasto por categoría para saber en tiempo real cuánto llevas consumido sin tener que esperar a fin de mes.
+            </p>
+        </div>
+        <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddModal">
+            <Icon Name="plus" Size="16" />
+            <span>Definir Presupuesto</span>
+        </button>
+    </div>
+
+    <!-- TARJETAS DE RESUMEN GLOBAL -->
+    @{
+        decimal totalBudgeted = AppState.Data.BudgetCategories.Sum(b => b.MonthlyLimit);
+        decimal totalSpentThisMonth = AppState.Data.Expenses
+            .Where(e => e.Date.Month == DateTime.Today.Month && e.Date.Year == DateTime.Today.Year)
+            .Sum(e => e.UserShareAmount);
+        decimal globalPercentage = totalBudgeted > 0 ? Math.Round((totalSpentThisMonth / totalBudgeted) * 100m, 1) : 0m;
+    }
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Presupuesto Mensual Total</span>
+                <span class="fs-4 fw-bold text-dark mt-1">@totalBudgeted.ToString("N2") €</span>
+                <small class="text-muted">Límite asignado entre categorías</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Gastado Este Mes</span>
+                <span class="fs-4 fw-bold @(totalSpentThisMonth > totalBudgeted ? "text-danger" : "text-primary") mt-1">
+                    @totalSpentThisMonth.ToString("N2") €
+                </span>
+                <small class="text-muted">Gasto real acumulado (@globalPercentage%)</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 @(totalSpentThisMonth > totalBudgeted ? "border-danger" : "border-success")">
+                <span class="text-muted small fw-semibold text-uppercase">Margen Disponible</span>
+                <span class="fs-4 fw-bold @(totalBudgeted - totalSpentThisMonth >= 0 ? "text-success" : "text-danger") mt-1">
+                    @((totalBudgeted - totalSpentThisMonth).ToString("N2")) €
+                </span>
+                <small class="text-muted">Margen restante antes de exceder el límite</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRAS DE PROGRESO POR CATEGORÍA -->
+    <div class="row g-4">
+        @if (!AppState.Data.BudgetCategories.Any())
+        {
+            <div class="col-12">
+                <div class="card shadow-sm border-0 p-5 text-center text-muted">
+                    <h5>No tienes presupuestos definidos</h5>
+                    <p class="small">Añade límites por categoría como Alimentación, Ocio, Transporte o Vivienda para controlar tus gastos.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var budget in AppState.Data.BudgetCategories)
+            {
+                decimal spentInCategory = AppState.Data.Expenses
+                    .Where(e => e.Category.Equals(budget.Category, StringComparison.OrdinalIgnoreCase) &&
+                                e.Date.Month == DateTime.Today.Month && e.Date.Year == DateTime.Today.Year)
+                    .Sum(e => e.UserShareAmount);
+
+                decimal percentage = budget.MonthlyLimit > 0 ? Math.Round((spentInCategory / budget.MonthlyLimit) * 100m, 1) : 0m;
+                bool isExceeded = spentInCategory > budget.MonthlyLimit;
+
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge @(isExceeded ? "bg-danger" : (percentage >= 80 ? "bg-warning text-dark" : "bg-primary")) px-2 py-1">
+                                        @budget.Category
+                                    </span>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-danger btn-xs" @onclick="() => DeleteBudget(budget.Id)">
+                                        <Icon Name="trash" Size="13" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <ProgressBar 
+                                Current="@spentInCategory" 
+                                Target="@budget.MonthlyLimit" 
+                                Label="@budget.Category" 
+                                CurrentFormatted="@($"{spentInCategory:N2} €")" 
+                                TargetFormatted="@($"{budget.MonthlyLimit:N2} €")" />
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top text-muted small">
+                                <span>Restante disponible:</span>
+                                <span class="fw-bold @(budget.MonthlyLimit - spentInCategory >= 0 ? "text-success" : "text-danger")">
+                                    @((budget.MonthlyLimit - spentInCategory).ToString("N2")) €
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- MODAL DEFINIR PRESUPUESTO -->
+<ModalDialog IsOpen="isModalOpen" Title="Definir Presupuesto Mensual" OnClose="CloseModal">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Categoría</label>
+                <select class="form-select" @bind="newCategory">
+                    <option value="Alimentación">Alimentación</option>
+                    <option value="Vivienda">Vivienda</option>
+                    <option value="Ocio">Ocio</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Software">Software</option>
+                    <option value="Material">Material</option>
+                    <option value="Formación">Formación</option>
+                    <option value="Equipamiento">Equipamiento</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Límite Máximo Mensual (€)</label>
+                <input type="number" step="10" class="form-control" @bind="newLimit" />
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="CloseModal">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveBudget">Guardar Presupuesto</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isModalOpen = false;
+    private string newCategory = "Alimentación";
+    private decimal newLimit = 400;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenAddModal()
+    {
+        newCategory = "Alimentación";
+        newLimit = 400;
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task SaveBudget()
+    {
+        if (newLimit <= 0) return;
+        await AppState.AddOrUpdateBudgetAsync(newCategory, newLimit);
+        isModalOpen = false;
+    }
+
+    private async Task DeleteBudget(string id)
+    {
+        await AppState.DeleteBudgetAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

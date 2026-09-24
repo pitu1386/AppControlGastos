@@ -1,0 +1,229 @@
+@page "/gastos-fijos"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="fixed-expenses-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Gastos Fijos & Reservas Periódicas</h1>
+            <p class="text-muted small m-0 mt-1">
+                Conoce tus compromisos recurrentes, periodicidad (mensual, trimestral, anual), días de cobro y cuánto reservar cada mes para cubrirlos sin estrés.
+            </p>
+        </div>
+        <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddModal">
+            <Icon Name="plus" Size="16" />
+            <span>Nuevo Gasto Fijo</span>
+        </button>
+    </div>
+
+    <!-- TARJETAS DE RESUMEN -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-danger">
+                <span class="text-muted small fw-semibold text-uppercase">Reserva Mensual Necesaria</span>
+                <span class="fs-4 fw-bold text-danger mt-1">
+                    @AppState.Data.ImmediateFixedExpenses.ToString("N2") € / mes
+                </span>
+                <small class="text-muted">Incluye prorrateo mensual de seguros y anuales</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-primary">
+                <span class="text-muted small fw-semibold text-uppercase">Fijos Profesionales</span>
+                <span class="fs-4 fw-bold text-primary mt-1">
+                    @AppState.Data.FixedExpenses.Where(f => f.IsActive && f.Scope == ExpenseScope.Profesional).Sum(f => f.MonthlyReserveAmount).ToString("N2") € / mes
+                </span>
+                <small class="text-muted">Autónomos, gestoría, herramientas...</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-info">
+                <span class="text-muted small fw-semibold text-uppercase">% Sobre Facturación Media</span>
+                @{
+                    decimal monthlyInvoiced = AppState.Data.CurrentMonthInvoiced > 0 ? AppState.Data.CurrentMonthInvoiced : 4000m;
+                    decimal ratio = (AppState.Data.ImmediateFixedExpenses / monthlyInvoiced) * 100m;
+                }
+                <span class="fs-4 fw-bold text-info mt-1">@ratio.ToString("N1") %</span>
+                <small class="text-muted">Porcentaje de tus ingresos absorbido por fijos</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA DE GASTOS FIJOS -->
+    <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-modern m-0">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Categoría</th>
+                        <th>Ámbito</th>
+                        <th>Periodicidad</th>
+                        <th>Día de Pago</th>
+                        <th class="text-end">Importe Recurrente</th>
+                        <th class="text-end">Reserva Mensual</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!AppState.Data.FixedExpenses.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                No tienes gastos fijos configurados aún.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in AppState.Data.FixedExpenses)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold text-slate-800">@item.Concept</div>
+                                    @if (!string.IsNullOrEmpty(item.Notes))
+                                    {
+                                        <small class="text-muted">@item.Notes</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary px-2 py-1">@item.Category</span>
+                                </td>
+                                <td>
+                                    @switch (item.Scope)
+                                    {
+                                        case ExpenseScope.Profesional:
+                                            <span class="badge bg-primary-subtle text-primary border">Profesional</span>
+                                            break;
+                                        case ExpenseScope.Personal:
+                                            <span class="badge bg-info-subtle text-info border">Personal</span>
+                                            break;
+                                        case ExpenseScope.Compartido:
+                                            <span class="badge bg-warning-subtle text-warning border">Compartido</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">@item.FrequencyLabel</span>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold text-dark">
+                                        @(item.DayOfMonth >= 28 ? "Último día de mes" : $"Día {item.DayOfMonth}")
+                                    </span>
+                                </td>
+                                <td class="text-end fw-bold text-dark">
+                                    @item.Amount.ToString("N2") €
+                                </td>
+                                <td class="text-end fw-bold text-danger">
+                                    @item.MonthlyReserveAmount.ToString("N2") € / mes
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteFixedExpense(item.Id)">
+                                        <Icon Name="trash" Size="14" />
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NUEVO GASTO FIJO -->
+<ModalDialog IsOpen="isModalOpen" Title="Nuevo Gasto Fijo Recurrente" OnClose="CloseModal">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label small fw-semibold">Concepto</label>
+                <input type="text" class="form-control" @bind="newItem.Concept" placeholder="Ej. Cuota Autónomos, Gestoría, Figma..." />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Importe (€)</label>
+                <input type="number" step="0.01" class="form-control" @bind="newItem.Amount" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Categoría</label>
+                <select class="form-select" @bind="newItem.Category">
+                    <option value="Autónomos">Autónomos</option>
+                    <option value="Gestoría">Gestoría</option>
+                    <option value="Software">Software</option>
+                    <option value="Vivienda">Vivienda</option>
+                    <option value="Suministros">Suministros</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Ámbito</label>
+                <select class="form-select" @bind="newItem.Scope">
+                    <option value="@ExpenseScope.Profesional">Profesional (Actividad)</option>
+                    <option value="@ExpenseScope.Personal">Personal</option>
+                    <option value="@ExpenseScope.Compartido">Compartido</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Periodicidad</label>
+                <select class="form-select" @bind="newItem.Frequency">
+                    <option value="@FrequencyType.Mensual">Mensual</option>
+                    <option value="@FrequencyType.Bimestral">Bimestral</option>
+                    <option value="@FrequencyType.Trimestral">Trimestral</option>
+                    <option value="@FrequencyType.Anual">Anual</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Día de cobro habitual</label>
+                <input type="number" class="form-control" @bind="newItem.DayOfMonth" min="1" max="31" />
+            </div>
+            <div class="col-12 bg-light p-3 rounded-3">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Reserva mensual equivalente que debes apartar:</span>
+                    <strong class="text-danger fs-5">@newItem.MonthlyReserveAmount.ToString("N2") € / mes</strong>
+                </div>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="CloseModal">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveFixedExpense">Guardar Gasto Fijo</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isModalOpen = false;
+    private FixedExpense newItem = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenAddModal()
+    {
+        newItem = new FixedExpense { Frequency = FrequencyType.Mensual, DayOfMonth = 1 };
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task SaveFixedExpense()
+    {
+        if (string.IsNullOrWhiteSpace(newItem.Concept) || newItem.Amount <= 0) return;
+        await AppState.AddFixedExpenseAsync(newItem);
+        isModalOpen = false;
+    }
+
+    private async Task DeleteFixedExpense(string id)
+    {
+        await AppState.DeleteFixedExpenseAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

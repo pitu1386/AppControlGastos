@@ -1,0 +1,248 @@
+@page "/cuotas"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="installments-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Gastos a Plazos & Cuotas</h1>
+            <p class="text-muted small m-0 mt-1">
+                Control de compras financiadas y pagos fraccionados. Conoce exactamente cuánto dinero tienes comprometido a futuro.
+            </p>
+        </div>
+        <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddModal">
+            <Icon Name="plus" Size="16" />
+            <span>Nueva Compra en Cuotas</span>
+        </button>
+    </div>
+
+    <!-- TARJETAS DE RESUMEN DE CUOTAS -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-danger">
+                <span class="text-muted small fw-semibold text-uppercase">Dinero Comprometido a Futuro</span>
+                <span class="fs-4 fw-bold text-danger mt-1">
+                    @AppState.Data.TotalCommittedFutureInstallments.ToString("N2") €
+                </span>
+                <small class="text-muted">Total pendiente de pago en todas las cuotas</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-warning">
+                <span class="text-muted small fw-semibold text-uppercase">Cuotas a Pagar Este Mes</span>
+                <span class="fs-4 fw-bold text-warning mt-1">
+                    @AppState.Data.NextInstallmentsDueThisMonth.ToString("N2") €
+                </span>
+                <small class="text-muted">Impacto directo en la liquidez mensual</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-success">
+                <span class="text-muted small fw-semibold text-uppercase">Total Ya Pagado</span>
+                <span class="fs-4 fw-bold text-success mt-1">
+                    @AppState.Data.Installments.Sum(i => i.PaidAmount).ToString("N2") €
+                </span>
+                <small class="text-muted">Importe amortizado hasta la fecha</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTADO DE COMPRAS EN CUOTAS -->
+    <div class="row g-4">
+        @if (!AppState.Data.Installments.Any())
+        {
+            <div class="col-12">
+                <div class="card shadow-sm border-0 p-5 text-center text-muted">
+                    <h5>No tienes compras en cuotas registradas</h5>
+                    <p class="small">Registra aquí compras como viajes, tecnología o equipamiento fraccionado en varios pagos.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var item in AppState.Data.Installments)
+            {
+                <div class="col-12 col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="h6 fw-bold m-0 text-slate-900">@item.Concept</h2>
+                                <span class="badge bg-secondary-subtle text-secondary fs-xs">@item.Category • @item.Scope</span>
+                            </div>
+                            <span class="badge @(item.IsCompleted ? "bg-success" : "bg-warning text-dark") px-2 py-1">
+                                Cuota @item.PaidInstallments de @item.TotalInstallments
+                            </span>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <span class="small text-muted d-block">Importe Total</span>
+                                    <span class="fw-bold text-dark fs-5">@item.TotalAmount.ToString("N2") €</span>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="small text-muted d-block">Importe por Cuota</span>
+                                    <span class="fw-bold text-primary fs-5">@item.InstallmentAmount.ToString("N2") € / mes</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="small text-muted d-block">Comprometido Restante</span>
+                                    <span class="fw-bold text-danger">@item.CommittedFutureAmount.ToString("N2") €</span>
+                                    <div class="fs-xs text-muted">Quedan @item.RemainingInstallments cuotas</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="small text-muted d-block">Próximo Vencimiento</span>
+                                    <span class="fw-bold text-dark">@item.NextDueDate.ToString("dd/MM/yyyy")</span>
+                                </div>
+                            </div>
+
+                            <!-- BARRA DE PROGRESO DE CUOTAS -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Progreso de amortización</span>
+                                    <span>@item.PaidInstallments de @item.TotalInstallments cuotas (@((int)((double)item.PaidInstallments / item.TotalInstallments * 100))%)</span>
+                                </div>
+                                <div class="progress" style="height: 10px; border-radius: 6px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" 
+                                         style="width: @((double)item.PaidInstallments / item.TotalInstallments * 100)%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PRÓXIMAS FECHAS PROYECTADAS -->
+                            @if (!item.IsCompleted)
+                            {
+                                <div class="bg-light p-3 rounded-3 border mb-3">
+                                    <span class="fw-bold text-muted fs-xs text-uppercase d-block mb-2">Próximos Vencimientos Proyectados</span>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var upcoming in item.GetUpcomingInstallments().Take(4))
+                                        {
+                                            <span class="badge bg-white text-dark border px-2 py-1 small">
+                                                Cuota @upcoming.InstallmentNumber: @upcoming.DueDate.ToString("dd/MM/yy") (@upcoming.Amount.ToString("N2") €)
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="d-flex justify-content-between align-items-center pt-2">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteInstallment(item.Id)">
+                                    <Icon Name="trash" Size="14" /> Eliminar
+                                </button>
+                                @if (!item.IsCompleted)
+                                {
+                                    <button class="btn btn-sm btn-success rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="() => PayNext(item.Id)">
+                                        <Icon Name="check" Size="14" />
+                                        <span>Pagar Cuota @(item.PaidInstallments + 1) (@item.InstallmentAmount.ToString("N2") €)</span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success-subtle text-success border px-3 py-1">Totalmente pagado</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- MODAL NUEVA COMPRA EN CUOTAS -->
+<ModalDialog IsOpen="isModalOpen" Title="Registrar Compra en Cuotas" OnClose="CloseModal">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label small fw-semibold">Concepto / Compra</label>
+                <input type="text" class="form-control" @bind="newItem.Concept" placeholder="Ej. Viaje Argentina, MacBook Pro..." />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Categoría</label>
+                <select class="form-select" @bind="newItem.Category">
+                    <option value="Ocio">Ocio</option>
+                    <option value="Equipamiento">Equipamiento</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Importe Total (€)</label>
+                <input type="number" step="0.01" class="form-control" @bind="newItem.TotalAmount" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Número Total de Cuotas</label>
+                <input type="number" class="form-control" @bind="newItem.TotalInstallments" min="1" max="60" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Cuotas Ya Pagadas</label>
+                <input type="number" class="form-control" @bind="newItem.PaidInstallments" min="0" max="@newItem.TotalInstallments" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Fecha Primera Cuota</label>
+                <input type="date" class="form-control" @bind="newItem.StartDate" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Fecha Siguiente Cuota</label>
+                <input type="date" class="form-control" @bind="newItem.NextDueDate" />
+            </div>
+            <div class="col-12 bg-light p-3 rounded-3">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Importe calculado por cuota:</span>
+                    <strong class="text-primary fs-5">@newItem.InstallmentAmount.ToString("N2") € / mes</strong>
+                </div>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="CloseModal">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveInstallment">Guardar Cuotas</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isModalOpen = false;
+    private InstallmentPurchase newItem = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenAddModal()
+    {
+        newItem = new InstallmentPurchase
+        {
+            TotalInstallments = 6,
+            PaidInstallments = 0,
+            StartDate = DateTime.Today,
+            NextDueDate = DateTime.Today.AddMonths(1)
+        };
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task SaveInstallment()
+    {
+        if (string.IsNullOrWhiteSpace(newItem.Concept) || newItem.TotalAmount <= 0 || newItem.TotalInstallments <= 0) return;
+        await AppState.AddInstallmentAsync(newItem);
+        isModalOpen = false;
+    }
+
+    private async Task PayNext(string id)
+    {
+        await AppState.PayNextInstallmentAsync(id);
+    }
+
+    private async Task DeleteInstallment(string id)
+    {
+        await AppState.DeleteInstallmentAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

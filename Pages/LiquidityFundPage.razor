@@ -1,0 +1,217 @@
+@page "/fondo-liquidez"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="liquidity-fund-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Colchón de Liquidez & Reposiciones</h1>
+            <p class="text-muted small m-0 mt-1">
+                Fondo de emergencia para suavizar los baches de cobro (facturas a 90 días). Distingue entre un gasto real y un desajuste temporal de tesorería.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-warning rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="() => OpenMovementModal(FundMovementType.RetiroPorTensionLiquidez)">
+                <Icon Name="arrow-up-right" Size="16" />
+                <span>Retiro por Tensión de Cobro</span>
+            </button>
+            <button class="btn btn-success rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="() => OpenMovementModal(FundMovementType.Reposicion)">
+                <Icon Name="arrow-down-left" Size="16" />
+                <span>Reponer al Fondo</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TARJETAS PRINCIPALES DEL FONDO -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Objetivo del Fondo</span>
+                <span class="fs-4 fw-bold text-dark mt-1">@AppState.Data.LiquidityFund.TargetAmount.ToString("N2") €</span>
+                <small class="text-muted">Colchón financiero deseado</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-primary">
+                <span class="text-muted small fw-semibold text-uppercase">Saldo Disponible en Fondo</span>
+                <span class="fs-4 fw-bold text-primary mt-1">@AppState.Data.LiquidityFund.CurrentBalance.ToString("N2") €</span>
+                <small class="text-muted">@AppState.Data.LiquidityFund.CompletionPercentage% de la meta</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-danger">
+                <span class="text-muted small fw-semibold text-uppercase">Dinero Utilizado Temporalmente</span>
+                <span class="fs-4 fw-bold text-danger mt-1">@AppState.Data.LiquidityFund.RealUsedPending.ToString("N2") €</span>
+                <small class="text-danger">Deuda activa con el fondo</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-warning">
+                <span class="text-muted small fw-semibold text-uppercase">Pendiente de Reponer</span>
+                <span class="fs-4 fw-bold text-warning mt-1">@AppState.Data.LiquidityFund.RealUsedPending.ToString("N2") €</span>
+                <small class="text-muted">A devolver al cobrar facturas pendientes</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA DE META DEL FONDO -->
+    <div class="card shadow-sm border-0 mb-4 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h2 class="h6 fw-bold m-0 text-slate-900">Progreso del Fondo de Respaldo</h2>
+                <small class="text-muted">Meta: @AppState.Data.LiquidityFund.TargetAmount.ToString("N2") €</small>
+            </div>
+            <span class="badge bg-emerald-100 text-emerald-800 fs-6 px-3 py-1 rounded-pill">
+                @AppState.Data.LiquidityFund.CompletionPercentage%
+            </span>
+        </div>
+        <ProgressBar 
+            Current="@AppState.Data.LiquidityFund.CurrentBalance" 
+            Target="@AppState.Data.LiquidityFund.TargetAmount" 
+            InvertAlert="true" />
+    </div>
+
+    <!-- HISTORIAL DE MOVIMIENTOS DEL FONDO -->
+    <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <h2 class="h6 fw-bold m-0 text-dark">Movimientos y Reposiciones</h2>
+            <span class="badge bg-light text-muted border">@AppState.Data.LiquidityFund.Movements.Count registros</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-modern m-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo Movimiento</th>
+                        <th>Motivo / Justificación</th>
+                        <th class="text-end">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!AppState.Data.LiquidityFund.Movements.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                No se han registrado movimientos en el fondo de liquidez.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var mov in AppState.Data.LiquidityFund.Movements)
+                        {
+                            <tr>
+                                <td>@mov.Date.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @switch (mov.Type)
+                                    {
+                                        case FundMovementType.RetiroPorTensionLiquidez:
+                                            <span class="badge bg-warning-subtle text-warning border px-2 py-1">
+                                                Retiro Temporal (Tensión de Cobro)
+                                            </span>
+                                            break;
+                                        case FundMovementType.Reposicion:
+                                            <span class="badge bg-success-subtle text-success border px-2 py-1">
+                                                Reposición al Fondo
+                                            </span>
+                                            break;
+                                        case FundMovementType.AporteExtraordinario:
+                                            <span class="badge bg-primary-subtle text-primary border px-2 py-1">
+                                                Aporte Extraordinario
+                                            </span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="fw-semibold text-slate-800">@mov.Reason</td>
+                                <td class="text-end fw-bold @(mov.Type == FundMovementType.RetiroPorTensionLiquidez ? "text-warning" : "text-success")">
+                                    @(mov.Type == FundMovementType.RetiroPorTensionLiquidez ? "-" : "+")@mov.Amount.ToString("N2") €
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MOVIMIENTO FONDO -->
+<ModalDialog IsOpen="isModalOpen" Title="@modalTitle" OnClose="() => isModalOpen = false">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Tipo de Movimiento</label>
+                <select class="form-select" @bind="movementType">
+                    <option value="@FundMovementType.RetiroPorTensionLiquidez">Retiro por tensión de liquidez</option>
+                    <option value="@FundMovementType.Reposicion">Reposición al fondo (devolver dinero)</option>
+                    <option value="@FundMovementType.AporteExtraordinario">Aporte extraordinario al fondo</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Importe (€)</label>
+                <input type="number" step="0.01" class="form-control" @bind="movementAmount" />
+            </div>
+            <div class="col-12">
+                <label class="form-label small fw-semibold">Motivo / Causa</label>
+                <input type="text" class="form-control" @bind="movementReason" placeholder="Ej. Cubrir pagos mientras llega cobro Bélgica a 90 días..." />
+            </div>
+            <div class="col-12 bg-light p-3 rounded-3 small text-muted">
+                @if (movementType == FundMovementType.RetiroPorTensionLiquidez)
+                {
+                    <span>El dinero se transfiere a tu cuenta bancaria y queda registrado como <strong>deuda con el fondo</strong> sin contarse como gasto ordinario.</span>
+                }
+                else
+                {
+                    <span>El dinero se devuelve desde tu cuenta bancaria al colchón de liquidez, cancelando la deuda pendiente.</span>
+                }
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveMovement">Guardar Movimiento</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isModalOpen = false;
+    private string modalTitle = "Movimiento de Fondo";
+    private FundMovementType movementType = FundMovementType.RetiroPorTensionLiquidez;
+    private decimal movementAmount = 1000;
+    private string movementReason = "";
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenMovementModal(FundMovementType type)
+    {
+        movementType = type;
+        if (type == FundMovementType.RetiroPorTensionLiquidez)
+        {
+            modalTitle = "Retiro por Tensión de Cobro";
+            movementReason = "Adelanto por factura pendiente a 90 días";
+            movementAmount = 1000;
+        }
+        else
+        {
+            modalTitle = "Reponer Dinero al Fondo";
+            movementReason = "Reposición tras cobro de factura";
+            movementAmount = AppState.Data.LiquidityFund.RealUsedPending > 0 ? AppState.Data.LiquidityFund.RealUsedPending : 500;
+        }
+        isModalOpen = true;
+    }
+
+    private async Task SaveMovement()
+    {
+        if (movementAmount <= 0) return;
+        await AppState.AddFundMovementAsync(movementType, movementAmount, movementReason);
+        isModalOpen = false;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

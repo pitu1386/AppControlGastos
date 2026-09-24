@@ -1,0 +1,238 @@
+@page "/informes"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="monthly-report-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Informe Mensual Automático & Cierres</h1>
+            <p class="text-muted small m-0 mt-1">
+                Liquidación mensual que separa tajantemente el "Beneficio Contable" del "Dinero Real en Cuenta", con comparativa con el mes anterior.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" @bind="selectedMonth">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+            <select class="form-select form-select-sm" @bind="selectedYear">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2027">2027</option>
+            </select>
+        </div>
+    </div>
+
+    @{
+        // Cálculos del mes seleccionado
+        decimal invoiced = AppState.Data.Invoices
+            .Where(i => i.IssueDate.Month == selectedMonth && i.IssueDate.Year == selectedYear)
+            .Sum(i => i.TotalInvoice);
+
+        decimal collected = AppState.Data.Invoices
+            .Where(i => i.IsCollected && i.CollectedDate.HasValue && i.CollectedDate.Value.Month == selectedMonth && i.CollectedDate.Value.Year == selectedYear)
+            .Sum(i => i.CollectedAmount > 0 ? i.CollectedAmount : i.TotalInvoice);
+
+        decimal pending = invoiced - collected;
+
+        decimal profExpenses = AppState.Data.Expenses
+            .Where(e => e.Scope == ExpenseScope.Profesional && e.Date.Month == selectedMonth && e.Date.Year == selectedYear)
+            .Sum(e => e.Amount);
+
+        decimal persExpenses = AppState.Data.Expenses
+            .Where(e => e.Scope == ExpenseScope.Personal && e.Date.Month == selectedMonth && e.Date.Year == selectedYear)
+            .Sum(e => e.Amount);
+
+        decimal sharedExpensesUser = AppState.Data.Expenses
+            .Where(e => e.Scope == ExpenseScope.Compartido && e.Date.Month == selectedMonth && e.Date.Year == selectedYear)
+            .Sum(e => e.UserShareAmount);
+
+        decimal taxReserves = AppState.Data.Invoices
+            .Where(i => i.IssueDate.Month == selectedMonth && i.IssueDate.Year == selectedYear)
+            .Sum(i => i.IrpfReserveAmount + i.VatAmount);
+
+        decimal profProfit = invoiced - profExpenses - taxReserves;
+        decimal personalAvailableResult = collected - profExpenses - sharedExpensesUser - persExpenses - taxReserves;
+
+        decimal savingsTarget = AppState.Data.SavingsConfig.MonthlySavingsTarget;
+        decimal savingsAchieved = Math.Max(0m, personalAvailableResult);
+        bool savingsMet = savingsAchieved >= savingsTarget;
+
+        // Cálculos mes anterior
+        int prevM = selectedMonth == 1 ? 12 : selectedMonth - 1;
+        int prevY = selectedMonth == 1 ? selectedYear - 1 : selectedYear;
+        decimal prevInvoiced = AppState.Data.Invoices
+            .Where(i => i.IssueDate.Month == prevM && i.IssueDate.Year == prevY)
+            .Sum(i => i.TotalInvoice);
+        decimal prevCollected = AppState.Data.Invoices
+            .Where(i => i.IsCollected && i.CollectedDate.HasValue && i.CollectedDate.Value.Month == prevM && i.CollectedDate.Value.Year == prevY)
+            .Sum(i => i.CollectedAmount > 0 ? i.CollectedAmount : i.TotalInvoice);
+    }
+
+    <!-- DISTINCIÓN CLAVE: BENEFICIO CONTABLE VS DINERO EN CUENTA (PUNTO 15) -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm border-0 p-4 bg-white border-start border-4 border-primary">
+                <span class="text-uppercase tracking-wider fw-semibold small text-muted">Beneficio Contable (Devengo)</span>
+                <div class="fs-3 fw-bold text-primary mt-1">@profProfit.ToString("N2") €</div>
+                <p class="text-muted small mt-2 mb-0">
+                    Calculado como: <strong>Facturación emitida (@invoiced.ToString("N2") €) - Gastos profesionales (@profExpenses.ToString("N2") €) - Reservas fiscales (@taxReserves.ToString("N2") €)</strong>.
+                    Refleja el rendimiento teórico de tu actividad comercial en el mes.
+                </p>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm border-0 p-4 bg-white border-start border-4 border-success">
+                <span class="text-uppercase tracking-wider fw-semibold small text-muted">Dinero Realmente Entrado (Cobros)</span>
+                <div class="fs-3 fw-bold text-success mt-1">@collected.ToString("N2") €</div>
+                <p class="text-muted small mt-2 mb-0">
+                    Dinero que efectivamente ha ingresado en tu cuenta bancaria. 
+                    Si facturaste a Bélgica a 90 días, no puedes gastarlo hasta que se cobre.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORME DETALLADO ESTILO FICHA (PUNTO 15) -->
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h2 class="h6 fw-bold m-0 text-slate-900 text-uppercase">
+                        Resumen del Mes: @((new DateTime(selectedYear, selectedMonth, 1)).ToString("MMMM yyyy").ToUpper())
+                    </h2>
+                    <span class="badge bg-light text-muted border">Informe Oficial Interno</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="fw-semibold text-slate-800">Facturado Emitido</span>
+                        <strong class="text-dark">@invoiced.ToString("N2") €</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-success fw-semibold">Cobrado Efectivo</span>
+                        <strong class="text-success">@collected.ToString("N2") €</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-warning fw-semibold">Pendiente de Cobro (retrasos/90 días)</span>
+                        <strong class="text-warning">@pending.ToString("N2") €</strong>
+                    </div>
+
+                    <div class="my-3"></div>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom text-muted">
+                        <span>Gastos Profesionales (autónomos, asesoría, software)</span>
+                        <span class="text-danger">-@profExpenses.ToString("N2") €</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom text-muted">
+                        <span>Gastos Personales particulares</span>
+                        <span class="text-danger">-@persExpenses.ToString("N2") €</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom text-muted">
+                        <span>Gastos Compartidos (tu parte de vivienda y comunes)</span>
+                        <span class="text-danger">-@sharedExpensesUser.ToString("N2") €</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom text-muted">
+                        <span>Reservas Fiscales obligatorias (IRPF / IVA)</span>
+                        <span class="text-danger">-@taxReserves.ToString("N2") €</span>
+                    </div>
+
+                    <div class="my-3"></div>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom bg-light px-3 rounded-2">
+                        <span class="fw-bold text-dark">Beneficio Profesional</span>
+                        <strong class="fw-bold text-primary fs-6">@profProfit.ToString("N2") €</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 bg-emerald-50 px-3 rounded-2 mt-2 border border-emerald-200">
+                        <span class="fw-bold text-emerald-900">Resultado Disponible Personal</span>
+                        <strong class="fw-bold text-emerald-800 fs-5">@personalAvailableResult.ToString("N2") €</strong>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold text-dark d-block">Objetivo de Ahorro</span>
+                                <small class="text-muted">Meta mensual fijada: @savingsTarget.ToString("N2") €</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="fs-5 fw-bold @(savingsMet ? "text-success" : "text-warning")">
+                                    @savingsAchieved.ToString("N2") € @(savingsMet ? "✓ Conseguido" : "⚠️ En curso")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARATIVA CON EL MES ANTERIOR -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h2 class="h6 fw-bold m-0 text-dark">Comparativa Mes Anterior</h2>
+                </div>
+                <div class="card-body p-4 d-flex flex-column gap-3">
+                    <div class="p-3 bg-light rounded-3">
+                        <span class="small text-muted d-block">Facturado Mes Anterior</span>
+                        <span class="fw-bold text-dark fs-5">@prevInvoiced.ToString("N2") €</span>
+                        @{
+                            decimal diffInvoiced = invoiced - prevInvoiced;
+                        }
+                        <div class="fs-xs fw-semibold @(diffInvoiced >= 0 ? "text-success" : "text-danger") mt-1">
+                            @(diffInvoiced >= 0 ? "+" : "")@diffInvoiced.ToString("N2") € vs mes anterior
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3">
+                        <span class="small text-muted d-block">Cobros Reales Mes Anterior</span>
+                        <span class="fw-bold text-dark fs-5">@prevCollected.ToString("N2") €</span>
+                        @{
+                            decimal diffCollected = collected - prevCollected;
+                        }
+                        <div class="fs-xs fw-semibold @(diffCollected >= 0 ? "text-success" : "text-danger") mt-1">
+                            @(diffCollected >= 0 ? "+" : "")@diffCollected.ToString("N2") € vs mes anterior
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border">
+                        <span class="fw-bold small text-dark d-block mb-1">Diagnóstico de Tendencia</span>
+                        <p class="small text-muted m-0">
+                            @if (collected >= profExpenses + sharedExpensesUser + persExpenses)
+                            {
+                                <span>Tu tesorería cobrada en este mes cubre holgadamente todos tus costes fijos y gastos de vida.</span>
+                            }
+                            else
+                            {
+                                <span>Existe desfase temporal entre facturación y cobro. Asegúrate de tener respaldo en el colchón de liquidez.</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int selectedMonth = DateTime.Today.Month;
+    private int selectedYear = DateTime.Today.Year;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

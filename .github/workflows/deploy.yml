@@ -1,0 +1,39 @@
+name: Despliegue PWA en GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publicar aplicación Blazor WebAssembly
+        run: dotnet publish AppControlGastos.csproj -c Release -o output
+
+      - name: Configurar GitHub Pages (.nojekyll, 404.html, base href)
+        run: |
+          touch output/wwwroot/.nojekyll
+          cp output/wwwroot/index.html output/wwwroot/404.html
+          # Reemplazar <base href="/" /> por <base href="/${{ github.event.repository.name }}/" />
+          sed -i 's|<base href="/" />|<base href="/${{ github.event.repository.name }}/" />|g' output/wwwroot/index.html
+          sed -i 's|<base href="/" />|<base href="/${{ github.event.repository.name }}/" />|g' output/wwwroot/404.html
+
+      - name: Desplegar en la rama gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: output/wwwroot
+          publish_branch: gh-pages

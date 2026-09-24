@@ -1,0 +1,36 @@
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string Title { get; set; } = "Formulario";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public string MaxWidth { get; set; } = "650px";
+
+    private async Task CloseModal()
+    {
+        await OnClose.InvokeAsync();
+    }
+}
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(2px); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: @MaxWidth;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+                <div class="modal-header border-bottom px-4 py-3 bg-light">
+                    <h5 class="modal-title fw-bold text-dark fs-5">@Title</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-4" style="max-height: 80vh; overflow-y: auto;">
+                    @ChildContent
+                </div>
+                @if (Footer != null)
+                {
+                    <div class="modal-footer border-top px-4 py-3 bg-light">
+                        @Footer
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

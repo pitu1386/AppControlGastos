@@ -1,0 +1,243 @@
+@page "/gastos"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="mobile-expenses-view p-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h5 fw-bold text-slate-900 m-0">Registro de Gastos</h1>
+            <p class="text-muted fs-xs m-0">Profesional, Personal y Compartido</p>
+        </div>
+        <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddModal">
+            <Icon Name="plus" Size="14" />
+            <span>Añadir</span>
+        </button>
+    </div>
+
+    <!-- TARJETAS POR ÁMBITO MÓVILES -->
+    <div class="row g-2 mb-3">
+        <div class="col-4">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-primary">
+                <span class="fs-xs text-muted fw-semibold">Profesional</span>
+                <div class="fw-bold text-primary small">
+                    @AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Profesional).Sum(e => e.Amount).ToString("N0") €
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-info">
+                <span class="fs-xs text-muted fw-semibold">Personal</span>
+                <div class="fw-bold text-info small">
+                    @AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Personal).Sum(e => e.Amount).ToString("N0") €
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 border-start border-3 border-warning">
+                <span class="fs-xs text-muted fw-semibold">Compartido</span>
+                <div class="fw-bold text-warning small">
+                    @AppState.Data.Expenses.Where(e => e.Scope == ExpenseScope.Compartido).Sum(e => e.UserShareAmount).ToString("N0") €
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="d-flex gap-2 mb-3">
+        <input type="text" class="form-control form-control-sm" placeholder="Buscar concepto..." @bind="searchTerm" @bind:event="oninput" />
+        <select class="form-select form-select-sm w-auto" @bind="selectedScopeFilter">
+            <option value="todos">Todos</option>
+            <option value="profesional">Pro</option>
+            <option value="personal">Pers</option>
+            <option value="compartido">Comp</option>
+        </select>
+    </div>
+
+    <!-- LISTADO DE GASTOS ESTILO APP BANCARIA -->
+    <div class="d-flex flex-column gap-2 mb-4">
+        @if (!FilteredExpenses.Any())
+        {
+            <div class="card shadow-sm border-0 p-4 text-center text-muted small">
+                No hay gastos registrados con estos filtros.
+            </div>
+        }
+        else
+        {
+            @foreach (var exp in FilteredExpenses)
+            {
+                <div class="card shadow-xs border-0 p-3 bg-white rounded-3">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <div class="fw-bold text-slate-900 small">@exp.Concept</div>
+                            <span class="badge bg-secondary-subtle text-secondary fs-xs">@exp.Category</span>
+                            <span class="fs-xs text-muted ms-1">@exp.PaymentMethod</span>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-danger fs-6">
+                                -@exp.UserShareAmount.ToString("N2") €
+                            </div>
+                            @if (exp.Scope == ExpenseScope.Compartido)
+                            {
+                                <span class="badge bg-warning-subtle text-warning border fs-xs">
+                                    @(exp.PaidBy == "Yo" ? "Pagué Yo" : "Pagó Pareja")
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top fs-xs text-muted">
+                        <div>
+                            <span>@exp.Date.ToString("dd/MM/yyyy")</span>
+                            <span class="badge @(exp.Scope == ExpenseScope.Profesional ? "bg-primary-subtle text-primary border" : (exp.Scope == ExpenseScope.Personal ? "bg-info-subtle text-info border" : "bg-warning-subtle text-warning border")) ms-2">
+                                @exp.Scope
+                            </span>
+                        </div>
+                        <button class="btn btn-xs btn-outline-danger rounded-pill px-2 py-0 fs-xs" @onclick="() => DeleteExpense(exp.Id)">
+                            <Icon Name="trash" Size="12" />
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- MODAL REGISTRO GASTO -->
+<ModalDialog IsOpen="isModalOpen" Title="Registrar Gasto" OnClose="() => isModalOpen = false">
+    <ChildContent>
+        <div class="row g-2">
+            <div class="col-8">
+                <label class="form-label fs-xs fw-semibold">Concepto</label>
+                <input type="text" class="form-control form-control-sm" @bind="newExpense.Concept" placeholder="Ej. Material, Transporte..." />
+            </div>
+            <div class="col-4">
+                <label class="form-label fs-xs fw-semibold">Importe (€)</label>
+                <input type="number" step="0.01" class="form-control form-control-sm" @bind="newExpense.Amount" />
+            </div>
+            <div class="col-6">
+                <label class="form-label fs-xs fw-semibold">Fecha</label>
+                <input type="date" class="form-control form-control-sm" @bind="newExpense.Date" />
+            </div>
+            <div class="col-6">
+                <label class="form-label fs-xs fw-semibold">Categoría</label>
+                <select class="form-select form-select-sm" @bind="newExpense.Category">
+                    <option value="Gestoría">Gestoría</option>
+                    <option value="Autónomos">Autónomos</option>
+                    <option value="Software">Software</option>
+                    <option value="Material">Material</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Formación">Formación</option>
+                    <option value="Vivienda">Vivienda</option>
+                    <option value="Alimentación">Alimentación</option>
+                    <option value="Ocio">Ocio</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label fs-xs fw-semibold">Ámbito</label>
+                <select class="form-select form-select-sm" @bind="newExpense.Scope">
+                    <option value="@ExpenseScope.Profesional">Profesional</option>
+                    <option value="@ExpenseScope.Personal">Personal</option>
+                    <option value="@ExpenseScope.Compartido">Compartido</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label fs-xs fw-semibold">Forma Pago</label>
+                <select class="form-select form-select-sm" @bind="newExpense.PaymentMethod">
+                    <option value="@PaymentMethodType.Tarjeta">Tarjeta</option>
+                    <option value="@PaymentMethodType.Transferencia">Transferencia</option>
+                    <option value="@PaymentMethodType.Bizum">Bizum</option>
+                    <option value="@PaymentMethodType.Domiciliacion">Domiciliación</option>
+                </select>
+            </div>
+
+            @if (newExpense.Scope == ExpenseScope.Compartido)
+            {
+                <div class="col-12 p-2 bg-light rounded-2 border fs-xs">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label fs-xs fw-semibold">¿Quién pagó?</label>
+                            <select class="form-select form-select-sm" @bind="newExpense.PaidBy">
+                                <option value="Yo">Pagué Yo</option>
+                                <option value="Pareja">Pagó Pareja</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-xs fw-semibold">Mi %</label>
+                            <input type="number" class="form-control form-control-sm" @bind="newExpense.SharedPercentageUser" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-sm btn-light" @onclick="() => isModalOpen = false">Cancelar</button>
+        <button class="btn btn-sm btn-primary" @onclick="SaveExpense">Guardar</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private string searchTerm = "";
+    private string selectedScopeFilter = "todos";
+
+    private bool isModalOpen = false;
+    private Expense newExpense = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private IEnumerable<Expense> FilteredExpenses
+    {
+        get
+        {
+            var list = AppState.Data.Expenses.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                list = list.Where(e => e.Concept.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (selectedScopeFilter == "profesional")
+            {
+                list = list.Where(e => e.Scope == ExpenseScope.Profesional);
+            }
+            else if (selectedScopeFilter == "personal")
+            {
+                list = list.Where(e => e.Scope == ExpenseScope.Personal);
+            }
+            else if (selectedScopeFilter == "compartido")
+            {
+                list = list.Where(e => e.Scope == ExpenseScope.Compartido);
+            }
+
+            return list;
+        }
+    }
+
+    private void OpenAddModal()
+    {
+        newExpense = new Expense { Date = DateTime.Today };
+        isModalOpen = true;
+    }
+
+    private async Task SaveExpense()
+    {
+        if (string.IsNullOrWhiteSpace(newExpense.Concept) || newExpense.Amount <= 0) return;
+        await AppState.AddExpenseAsync(newExpense);
+        isModalOpen = false;
+    }
+
+    private async Task DeleteExpense(string id)
+    {
+        await AppState.DeleteExpenseAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

@@ -1,0 +1,218 @@
+@page "/salud-financiera"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="financial-health-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Salud Financiera & Los 5 Tipos de Dinero</h1>
+            <p class="text-muted small m-0 mt-1">
+                La visión integral y honesta de tu economía: separa tajantemente beneficio, liquidez, patrimonio y deuda para no confundir saldo con disponibilidad.
+            </p>
+        </div>
+    </div>
+
+    <!-- CIFRA CENTRAL: DINERO REALMENTE DISPONIBLE (LA MÉTRICA DE ORO) -->
+    <div class="card shadow-sm border-0 mb-4 text-white" style="background: linear-gradient(135deg, #064e3b, #047857); border-radius: 16px;">
+        <div class="card-body p-4 p-md-5">
+            <div class="row align-items-center">
+                <div class="col-12 col-lg-8">
+                    <span class="badge bg-emerald-800 text-emerald-100 px-3 py-1 rounded-pill small fw-semibold text-uppercase tracking-wider">
+                        MÉTRICA CENTRAL DE TODO EL PROGRAMA
+                    </span>
+                    <h2 class="display-5 fw-bolder mt-3 mb-1 text-white tracking-tight">
+                        @AppState.Data.RealAvailableCash.ToString("N2") €
+                    </h2>
+                    <h3 class="h5 text-emerald-100 fw-normal mb-3">Dinero Propio Realmente Disponible</h3>
+                    <p class="text-emerald-200 small m-0" style="max-width: 600px;">
+                        Tener dinero en la cuenta no significa que puedas gastarlo. Esta cifra descuenta reservas fiscales de Bélgica/España, 
+                        gastos fijos inmediatos, compras en cuotas, reposición al fondo, dinero familiar de terceros y deudas con tu pareja.
+                    </p>
+                </div>
+                <div class="col-12 col-lg-4 mt-4 mt-lg-0">
+                    <div class="bg-black bg-opacity-25 p-4 rounded-3 border border-white border-opacity-10 text-white">
+                        <div class="d-flex justify-content-between py-1 border-bottom border-white border-opacity-10 small">
+                            <span class="opacity-75">Saldo bancario:</span>
+                            <span class="fw-bold">+@AppState.Data.BankAccountBalance.ToString("N2") €</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom border-white border-opacity-10 small text-danger-subtle">
+                            <span class="opacity-75">Reservas fiscales:</span>
+                            <span>-@AppState.Data.TaxReservesRequired.ToString("N2") €</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom border-white border-opacity-10 small text-danger-subtle">
+                            <span class="opacity-75">Gastos fijos mes:</span>
+                            <span>-@AppState.Data.ImmediateFixedExpenses.ToString("N2") €</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom border-white border-opacity-10 small text-danger-subtle">
+                            <span class="opacity-75">Cuotas de este mes:</span>
+                            <span>-@AppState.Data.NextInstallmentsDueThisMonth.ToString("N2") €</span>
+                        </div>
+                        @if (AppState.Data.CalculatePartnerDebt() > 0)
+                        {
+                            <div class="d-flex justify-content-between py-1 border-bottom border-white border-opacity-10 small text-danger-subtle">
+                                <span class="opacity-75">Deuda con pareja:</span>
+                                <span>-@AppState.Data.CalculatePartnerDebt().ToString("N2") €</span>
+                            </div>
+                        }
+                        @if (AppState.Data.FundDebtPending > 0)
+                        {
+                            <div class="d-flex justify-content-between py-1 border-bottom border-white border-opacity-10 small text-danger-subtle">
+                                <span class="opacity-75">Devolución al fondo:</span>
+                                <span>-@AppState.Data.FundDebtPending.ToString("N2") €</span>
+                            </div>
+                        }
+                        @if (AppState.Data.ThirdPartyMoney > 0)
+                        {
+                            <div class="d-flex justify-content-between py-1 small text-danger-subtle">
+                                <span class="opacity-75">Dinero de familia:</span>
+                                <span>-@AppState.Data.ThirdPartyMoney.ToString("N2") €</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOS 5 INDICADORES DE SALUD FINANCIERA -->
+    <div class="row g-3 mb-4">
+        <!-- 1. BENEFICIO -->
+        <div class="col-12 col-md-6 col-lg">
+            <div class="card shadow-sm border-0 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">1. Beneficio</span>
+                    <Icon Name="chart" Size="18" Class="text-primary" />
+                </div>
+                <div class="fs-4 fw-bold text-primary">@AppState.Data.CurrentMonthProfit.ToString("N2") €</div>
+                <small class="text-muted mt-1">¿Cuánto estoy ganando realmente después de impuestos y costes?</small>
+            </div>
+        </div>
+
+        <!-- 2. LIQUIDEZ -->
+        <div class="col-12 col-md-6 col-lg">
+            <div class="card shadow-sm border-0 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">2. Liquidez</span>
+                    <Icon Name="wallet" Size="18" Class="text-success" />
+                </div>
+                <div class="fs-4 fw-bold text-success">@AppState.Data.BankAccountBalance.ToString("N2") €</div>
+                <small class="text-muted mt-1">Saldo bancario inmediato en cuenta corriente.</small>
+            </div>
+        </div>
+
+        <!-- 3. PENDIENTE DE COBRO -->
+        <div class="col-12 col-md-6 col-lg">
+            <div class="card shadow-sm border-0 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">3. Cobro Pendiente</span>
+                    <Icon Name="invoice" Size="18" Class="text-warning" />
+                </div>
+                <div class="fs-4 fw-bold text-warning">@AppState.Data.TotalPendingInvoices.ToString("N2") €</div>
+                <small class="text-muted mt-1">Facturas emitidas pendientes (incluye clientes a 90 días).</small>
+            </div>
+        </div>
+
+        <!-- 4. COMPROMISOS -->
+        <div class="col-12 col-md-6 col-lg">
+            <div class="card shadow-sm border-0 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">4. Compromisos</span>
+                    <Icon Name="shield" Size="18" Class="text-danger" />
+                </div>
+                @{
+                    decimal commitments = AppState.Data.TaxReservesRequired + AppState.Data.ImmediateFixedExpenses + AppState.Data.TotalCommittedFutureInstallments + AppState.Data.FamilyLoanDebt;
+                }
+                <div class="fs-4 fw-bold text-danger">@commitments.ToString("N2") €</div>
+                <small class="text-muted mt-1">Impuestos, fijos, cuotas futuras y préstamo de padres.</small>
+            </div>
+        </div>
+
+        <!-- 5. TRABAJO FUTURO -->
+        <div class="col-12 col-md-6 col-lg">
+            <div class="card shadow-sm border-0 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-uppercase tracking-wider fw-semibold small text-muted">5. Trabajo Futuro</span>
+                    <Icon Name="briefcase" Size="18" Class="text-indigo" />
+                </div>
+                <div class="fs-4 fw-bold text-indigo">@AppState.Data.ProjectsPotentialIncome.ToString("N2") €</div>
+                <small class="text-muted mt-1">Ingresos previstos por horas pendientes en proyectos activos.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOS 5 GRANDES TIPOS DE DINERO CON DESGLOSE COMPLETO -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h2 class="h6 fw-bold m-0 text-slate-900">Los 5 Grandes Tipos de Dinero (Estructura Mental y Contable)</h2>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-12 col-md-6 col-xl">
+                    <div class="p-3 rounded-3 bg-light border h-100 border-top border-4 border-emerald-500">
+                        <span class="fw-bold text-emerald-800 d-block fs-6 mb-1">1. Dinero Propio</span>
+                        <div class="fs-4 fw-bold text-dark mb-2">@AppState.Data.RealAvailableCash.ToString("N2") €</div>
+                        <p class="small text-muted m-0">
+                            Lo que realmente es tuyo, limpio de compromisos y disponible para uso libre o ahorro personal.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl">
+                    <div class="p-3 rounded-3 bg-light border h-100 border-top border-4 border-primary">
+                        <span class="fw-bold text-primary d-block fs-6 mb-1">2. Dinero Profesional</span>
+                        <div class="fs-4 fw-bold text-dark mb-2">@AppState.Data.Invoices.Sum(i => i.TotalInvoice).ToString("N2") €</div>
+                        <p class="small text-muted m-0">
+                            Ingresos de tu actividad comercial como autónomo (clientes nacionales y del exterior).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl">
+                    <div class="p-3 rounded-3 bg-light border h-100 border-top border-4 border-secondary">
+                        <span class="fw-bold text-secondary d-block fs-6 mb-1">3. Dinero de Terceros</span>
+                        <div class="fs-4 fw-bold text-dark mb-2">@AppState.Data.ThirdPartyMoney.ToString("N2") €</div>
+                        <p class="small text-muted m-0">
+                            Dinero recibido de familiares (ej. dólares/euros de mamá) que estás custodiando o administrando.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl">
+                    <div class="p-3 rounded-3 bg-light border h-100 border-top border-4 border-danger">
+                        <span class="fw-bold text-danger d-block fs-6 mb-1">4. Dinero Prestado / Deudas</span>
+                        <div class="fs-4 fw-bold text-dark mb-2">
+                            @((AppState.Data.FamilyLoanDebt + AppState.Data.FundDebtPending + Math.Max(0m, AppState.Data.CalculatePartnerDebt())).ToString("N2")) €
+                        </div>
+                        <p class="small text-muted m-0">
+                            Préstamo de tus padres (@AppState.Data.FamilyLoanDebt.ToString("N2") €), deuda con el fondo (@AppState.Data.FundDebtPending.ToString("N2") €) y saldo con pareja.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl">
+                    <div class="p-3 rounded-3 bg-light border h-100 border-top border-4 border-warning">
+                        <span class="fw-bold text-warning d-block fs-6 mb-1">5. Dinero Reservado</span>
+                        <div class="fs-4 fw-bold text-dark mb-2">
+                            @((AppState.Data.TaxReservesRequired + AppState.Data.ImmediateFixedExpenses + AppState.Data.TotalCommittedFutureInstallments).ToString("N2")) €
+                        </div>
+                        <p class="small text-muted m-0">
+                            Reservas fiscales de IRPF e IVA, gastos fijos periódicos, cuotas de compras y metas de ahorro.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

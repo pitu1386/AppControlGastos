@@ -1,0 +1,26 @@
+## Archivos y carpetas de compilación .NET
+bin/
+obj/
+publish_output/
+
+## IDE y editores
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Sistema operativo y temporales
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*.tmp
+*.log
+
+## Publicación de pruebas
+publish/
+dist/
+node_modules/

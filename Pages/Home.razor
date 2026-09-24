@@ -1,0 +1,471 @@
+@page "/"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="mobile-home-view p-3">
+    <!-- Header resumen y bienvenida -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="fs-xs text-uppercase tracking-wider fw-bold text-muted">
+                @DateTime.Today.ToString("MMMM yyyy").ToUpper()
+            </span>
+            <h1 class="h5 fw-bold text-slate-900 m-0">Resumen Financiero</h1>
+        </div>
+        <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-primary rounded-pill px-2 py-1 fs-xs d-flex align-items-center gap-1 shadow-xs" @onclick="OpenAddExpenseModal">
+                <Icon Name="plus" Size="13" />
+                <span>Gasto</span>
+            </button>
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 fs-xs d-flex align-items-center gap-1" @onclick="OpenAddInvoiceModal">
+                <Icon Name="plus" Size="13" />
+                <span>Factura</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TARJETA DESTACADA: DISPONIBLE REAL (LA CIFRA CLAVE) -->
+    <div class="card shadow-sm border-0 mb-3 text-white overflow-hidden" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%); border-radius: 18px;">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fs-xs text-uppercase tracking-wider text-emerald-200 fw-bold">💚 Disponible Real</span>
+                <span class="badge bg-emerald-800 text-emerald-100 fs-xs rounded-pill">Libre de cargas</span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <div class="display-6 fw-bold tracking-tight text-white">
+                    @AppState.Data.RealAvailableCash.ToString("N2") €
+                </div>
+            </div>
+            <p class="fs-xs text-emerald-100 opacity-90 m-0 mt-1">
+                Dinero propio tras restar reservas de IRPF/IVA, gastos fijos, cuotas, deudas y fondo.
+            </p>
+        </div>
+    </div>
+
+    <!-- 11. PANEL PRINCIPAL: GRILLA DE LOS 6 INDICADORES (MÓVIL 2X3) -->
+    <div class="row g-2 mb-3">
+        <!-- 1. Saldo actual -->
+        <div class="col-6">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 h-100 border-start border-3 border-primary">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fs-xs text-muted fw-semibold">Saldo Cuenta</span>
+                    <Icon Name="wallet" Size="14" Class="text-primary" />
+                </div>
+                <div class="fw-bold text-dark fs-6">@AppState.Data.BankAccountBalance.ToString("N2") €</div>
+                <div class="fs-xs text-muted truncate">En tu banco</div>
+            </div>
+        </div>
+
+        <!-- 2. Facturas pendientes -->
+        <div class="col-6">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 h-100 border-start border-3 border-info">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fs-xs text-muted fw-semibold">Por Cobrar</span>
+                    <Icon Name="invoice" Size="14" Class="text-info" />
+                </div>
+                <div class="fw-bold text-info fs-6">@AppState.Data.TotalPendingInvoices.ToString("N2") €</div>
+                <div class="fs-xs text-muted">@AppState.Data.Invoices.Count(i => !i.IsCollected) pendientes (90d)</div>
+            </div>
+        </div>
+
+        <!-- 3. Gastos pendientes / fijos -->
+        <div class="col-6">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 h-100 border-start border-3 border-danger">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fs-xs text-muted fw-semibold">Gastos Próx.</span>
+                    <Icon Name="expense" Size="14" Class="text-danger" />
+                </div>
+                <div class="fw-bold text-danger fs-6">@AppState.Data.TotalPendingUpcomingPayments.ToString("N2") €</div>
+                <div class="fs-xs text-muted">Fijos y cuotas mes</div>
+            </div>
+        </div>
+
+        <!-- 4. Reservas fiscales -->
+        <div class="col-6">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 h-100 border-start border-3 border-warning">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fs-xs text-muted fw-semibold">Reservas IRPF</span>
+                    <Icon Name="shield" Size="14" Class="text-warning" />
+                </div>
+                <div class="fw-bold text-warning fs-6">@AppState.Data.TaxReservesRequired.ToString("N2") €</div>
+                <div class="fs-xs text-muted">IRPF exterior + IVA</div>
+            </div>
+        </div>
+
+        <!-- 5. Beneficio del mes -->
+        <div class="col-6">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 h-100 border-start border-3 border-indigo">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fs-xs text-muted fw-semibold">Beneficio Mes</span>
+                    <Icon Name="chart" Size="14" Class="text-indigo" />
+                </div>
+                <div class="fw-bold text-indigo fs-6">@AppState.Data.CurrentMonthProfit.ToString("N2") €</div>
+                <div class="fs-xs text-muted">Cobrado - Gastos</div>
+            </div>
+        </div>
+
+        <!-- 6. Deuda con pareja / otros -->
+        <div class="col-6">
+            <div class="card shadow-xs border-0 p-2 bg-white rounded-3 h-100 border-start border-3 @(AppState.Data.CalculatePartnerDebt() > 0 ? "border-rose" : "border-emerald")">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fs-xs text-muted fw-semibold">Saldo Pareja</span>
+                    <Icon Name="users" Size="14" Class="text-secondary" />
+                </div>
+                @{
+                    decimal pDebt = AppState.Data.CalculatePartnerDebt();
+                }
+                <div class="fw-bold @(pDebt > 0 ? "text-danger" : "text-success") fs-6">
+                    @(pDebt > 0 ? $"-{pDebt:N2} €" : (pDebt < 0 ? $"+{Math.Abs(pDebt):N2} €" : "0,00 €"))
+                </div>
+                <div class="fs-xs text-muted">@(pDebt > 0 ? "Debes a tu pareja" : (pDebt < 0 ? "Te debe a ti" : "Al día"))</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESGLOSE: DINERO QUE NO PUEDO CONSIDERAR DISPONIBLE (SECCIÓN 8) -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark small">¿Por qué no puedo gastar todo el saldo?</span>
+            <span class="badge bg-light text-muted border fs-xs">Fórmula</span>
+        </div>
+        <div class="card-body p-3 fs-xs">
+            <div class="d-flex justify-content-between py-1 border-bottom">
+                <span class="text-slate-800 fw-semibold">Saldo actual en el banco</span>
+                <span class="fw-bold text-dark">+@AppState.Data.BankAccountBalance.ToString("N2") €</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom text-muted">
+                <span>Reservas fiscales (IRPF exterior + IVA)</span>
+                <span class="text-danger">-@AppState.Data.TaxReservesRequired.ToString("N2") €</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom text-muted">
+                <span>Gastos fijos del mes (autónomos, gestoría...)</span>
+                <span class="text-danger">-@AppState.Data.ImmediateFixedExpenses.ToString("N2") €</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom text-muted">
+                <span>Cuotas pendientes de este mes</span>
+                <span class="text-danger">-@AppState.Data.NextInstallmentsDueThisMonth.ToString("N2") €</span>
+            </div>
+            @if (AppState.Data.CalculatePartnerDebt() > 0)
+            {
+                <div class="d-flex justify-content-between py-1 border-bottom text-muted">
+                    <span>Deuda con pareja por gastos compartidos</span>
+                    <span class="text-danger">-@AppState.Data.CalculatePartnerDebt().ToString("N2") €</span>
+                </div>
+            }
+            @if (AppState.Data.FundDebtPending > 0)
+            {
+                <div class="d-flex justify-content-between py-1 border-bottom text-muted">
+                    <span>Retiro temporal a reponer al fondo</span>
+                    <span class="text-danger">-@AppState.Data.FundDebtPending.ToString("N2") €</span>
+                </div>
+            }
+            @if (AppState.Data.ThirdPartyMoney > 0)
+            {
+                <div class="d-flex justify-content-between py-1 border-bottom text-muted">
+                    <span>Dinero administrado de terceros (familia)</span>
+                    <span class="text-danger">-@AppState.Data.ThirdPartyMoney.ToString("N2") €</span>
+                </div>
+            }
+            <div class="d-flex justify-content-between pt-2 mt-1 fw-bold text-emerald-800 fs-sm">
+                <span>Disponible Real Líquido:</span>
+                <span>@AppState.Data.RealAvailableCash.ToString("N2") €</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRÓXIMOS COBROS -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark small d-flex align-items-center gap-1">
+                <Icon Name="arrow-down-left" Size="14" Class="text-success" />
+                <span>Próximos Cobros Previstos</span>
+            </span>
+            <a href="facturas" class="fs-xs text-decoration-none">Ver todas &rarr;</a>
+        </div>
+        <div class="list-group list-group-flush">
+            @if (!AppState.Data.Invoices.Any(i => !i.IsCollected))
+            {
+                <div class="p-3 text-center text-muted fs-xs">No hay cobros pendientes registrados.</div>
+            }
+            else
+            {
+                @foreach (var inv in AppState.Data.Invoices.Where(i => !i.IsCollected).OrderBy(i => i.ExpectedPaymentDate).Take(3))
+                {
+                    <div class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold text-slate-800 small">@inv.ClientName</div>
+                            <div class="fs-xs text-muted">
+                                @inv.ExpectedPaymentDate.ToString("dd/MM/yyyy") • @inv.ClientCountry
+                                @if (inv.MustReserveIrpfExternally)
+                                {
+                                    <span class="text-warning"> (Res. IRPF: -@inv.IrpfReserveAmount.ToString("N0") €)</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-success small">+@inv.PendingToCollect.ToString("N2") €</div>
+                            <button class="btn btn-xs btn-outline-success rounded-pill px-2 py-0 fs-xs mt-1" @onclick="() => CollectInvoice(inv.Id)">
+                                Cobrar
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- PRÓXIMOS PAGOS -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark small d-flex align-items-center gap-1">
+                <Icon Name="arrow-up-right" Size="14" Class="text-danger" />
+                <span>Próximos Pagos & Vencimientos</span>
+            </span>
+            <a href="gastos-fijos" class="fs-xs text-decoration-none">Ver fijos &rarr;</a>
+        </div>
+        <div class="list-group list-group-flush">
+            @foreach (var fixedExp in AppState.Data.FixedExpenses.Where(f => f.IsActive).OrderBy(f => f.DayOfMonth).Take(3))
+            {
+                <div class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">@fixedExp.Concept</div>
+                        <div class="fs-xs text-muted">Día @fixedExp.DayOfMonth de cada mes • @fixedExp.Category</div>
+                    </div>
+                    <span class="fw-bold text-danger small">-@fixedExp.Amount.ToString("N2") €</span>
+                </div>
+            }
+            @foreach (var inst in AppState.Data.Installments.Where(i => !i.IsCompleted).Take(2))
+            {
+                <div class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold text-slate-800 small">Cuota @(inst.PaidInstallments + 1)/@inst.TotalInstallments — @inst.Concept</div>
+                        <div class="fs-xs text-muted">Vence: @inst.NextDueDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <span class="fw-bold text-danger small">-@inst.InstallmentAmount.ToString("N2") €</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REGISTRO RÁPIDO DE GASTO -->
+<ModalDialog IsOpen="isAddExpenseModalOpen" Title="Registrar Gasto" OnClose="() => isAddExpenseModalOpen = false">
+    <ChildContent>
+        <div class="row g-2">
+            <div class="col-8">
+                <label class="form-label small fw-semibold">Concepto</label>
+                <input type="text" class="form-control form-control-sm" @bind="newExpense.Concept" placeholder="Ej. Material, Supermercado..." />
+            </div>
+            <div class="col-4">
+                <label class="form-label small fw-semibold">Importe (€)</label>
+                <input type="number" step="0.01" class="form-control form-control-sm" @bind="newExpense.Amount" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Fecha</label>
+                <input type="date" class="form-control form-control-sm" @bind="newExpense.Date" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Categoría</label>
+                <select class="form-select form-select-sm" @bind="newExpense.Category">
+                    <option value="Gestoría">Gestoría</option>
+                    <option value="Autónomos">Autónomos</option>
+                    <option value="Software">Software</option>
+                    <option value="Material">Material</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Formación">Formación</option>
+                    <option value="Vivienda">Vivienda</option>
+                    <option value="Alimentación">Alimentación</option>
+                    <option value="Ocio">Ocio</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Ámbito</label>
+                <select class="form-select form-select-sm" @bind="newExpense.Scope">
+                    <option value="@ExpenseScope.Profesional">Profesional</option>
+                    <option value="@ExpenseScope.Personal">Personal</option>
+                    <option value="@ExpenseScope.Compartido">Compartido (Pareja)</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Forma Pago</label>
+                <select class="form-select form-select-sm" @bind="newExpense.PaymentMethod">
+                    <option value="@PaymentMethodType.Tarjeta">Tarjeta</option>
+                    <option value="@PaymentMethodType.Transferencia">Transferencia</option>
+                    <option value="@PaymentMethodType.Bizum">Bizum</option>
+                    <option value="@PaymentMethodType.Domiciliacion">Domiciliación</option>
+                </select>
+            </div>
+
+            @if (newExpense.Scope == ExpenseScope.Compartido)
+            {
+                <div class="col-12 p-2 bg-light rounded-2 border">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label fs-xs fw-semibold">¿Quién pagó?</label>
+                            <select class="form-select form-select-sm" @bind="newExpense.PaidBy">
+                                <option value="Yo">Pagué Yo</option>
+                                <option value="Pareja">Pagó Pareja</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fs-xs fw-semibold">Mi %</label>
+                            <input type="number" class="form-control form-control-sm" @bind="newExpense.SharedPercentageUser" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-sm btn-light" @onclick="() => isAddExpenseModalOpen = false">Cancelar</button>
+        <button class="btn btn-sm btn-primary" @onclick="SaveNewExpense">Guardar Gasto</button>
+    </Footer>
+</ModalDialog>
+
+<!-- MODAL EMISIÓN RÁPIDA DE FACTURA -->
+<ModalDialog IsOpen="isAddInvoiceModalOpen" Title="Emitir Factura" OnClose="() => isAddInvoiceModalOpen = false">
+    <ChildContent>
+        <div class="row g-2">
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Número</label>
+                <input type="text" class="form-control form-control-sm" @bind="newInvoice.Number" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Cliente</label>
+                <input type="text" class="form-control form-control-sm" @bind="newInvoice.ClientName" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">País</label>
+                <input type="text" class="form-control form-control-sm" @bind="newInvoice.ClientCountry" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Tipo</label>
+                <select class="form-select form-select-sm" @bind="newInvoice.Type" @bind:after="OnInvoiceTypeChanged">
+                    <option value="@InvoiceType.Nacional">Nacional (España)</option>
+                    <option value="@InvoiceType.Intracomunitaria">Bélgica / UE</option>
+                    <option value="@InvoiceType.Exterior">Otros países</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Base (€)</label>
+                <input type="number" step="0.01" class="form-control form-control-sm" @bind="newInvoice.BaseAmount" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Plazo</label>
+                <select class="form-select form-select-sm" @onchange="OnPaymentTermPresetChanged">
+                    <option value="30">30 días</option>
+                    <option value="60">60 días</option>
+                    <option value="90">90 días (Bélgica)</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Fecha Emisión</label>
+                <input type="date" class="form-control form-control-sm" @bind="newInvoice.IssueDate" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Fecha Prevista Cobro</label>
+                <input type="date" class="form-control form-control-sm" @bind="newInvoice.ExpectedPaymentDate" />
+            </div>
+
+            @if (newInvoice.Type != InvoiceType.Nacional)
+            {
+                <div class="col-12 p-2 bg-light rounded-2 border fs-xs">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="resIrpf" @bind="newInvoice.MustReserveIrpfExternally" />
+                        <label class="form-check-label fw-semibold" for="resIrpf">Reservar IRPF 20% (Mod 130)</label>
+                    </div>
+                </div>
+            }
+
+            <div class="col-12 bg-light p-2 rounded-2 text-end">
+                <span class="fs-xs text-muted me-2">Total factura:</span>
+                <strong class="text-dark fs-6">@newInvoice.TotalInvoice.ToString("N2") €</strong>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-sm btn-light" @onclick="() => isAddInvoiceModalOpen = false">Cancelar</button>
+        <button class="btn btn-sm btn-primary" @onclick="SaveNewInvoice">Emitir</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isAddExpenseModalOpen = false;
+    private Expense newExpense = new();
+
+    private bool isAddInvoiceModalOpen = false;
+    private Invoice newInvoice = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenAddExpenseModal()
+    {
+        newExpense = new Expense { Date = DateTime.Today };
+        isAddExpenseModalOpen = true;
+    }
+
+    private async Task SaveNewExpense()
+    {
+        if (string.IsNullOrWhiteSpace(newExpense.Concept) || newExpense.Amount <= 0) return;
+        await AppState.AddExpenseAsync(newExpense);
+        isAddExpenseModalOpen = false;
+    }
+
+    private void OpenAddInvoiceModal()
+    {
+        newInvoice = new Invoice
+        {
+            Number = $"FAC-{DateTime.Today.Year}-{(AppState.Data.Invoices.Count + 1):D3}",
+            IssueDate = DateTime.Today,
+            ExpectedPaymentDate = DateTime.Today.AddDays(30)
+        };
+        isAddInvoiceModalOpen = true;
+    }
+
+    private void OnInvoiceTypeChanged()
+    {
+        if (newInvoice.Type == InvoiceType.Intracomunitaria || newInvoice.Type == InvoiceType.Exterior)
+        {
+            newInvoice.ApplyVat = false;
+            newInvoice.ApplyIrpfWithholding = false;
+            newInvoice.MustReserveIrpfExternally = true;
+            newInvoice.ExternalIrpfReserveRate = 20m;
+            newInvoice.ExpectedPaymentDate = newInvoice.IssueDate.AddDays(90);
+        }
+        else
+        {
+            newInvoice.ApplyVat = true;
+            newInvoice.ApplyIrpfWithholding = true;
+            newInvoice.MustReserveIrpfExternally = false;
+            newInvoice.ExpectedPaymentDate = newInvoice.IssueDate.AddDays(30);
+        }
+    }
+
+    private void OnPaymentTermPresetChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int days) && days > 0)
+        {
+            newInvoice.ExpectedPaymentDate = newInvoice.IssueDate.AddDays(days);
+        }
+    }
+
+    private async Task SaveNewInvoice()
+    {
+        if (string.IsNullOrWhiteSpace(newInvoice.Number) || newInvoice.BaseAmount <= 0) return;
+        await AppState.AddInvoiceAsync(newInvoice);
+        isAddInvoiceModalOpen = false;
+    }
+
+    private async Task CollectInvoice(string id)
+    {
+        await AppState.MarkInvoiceCollectedAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

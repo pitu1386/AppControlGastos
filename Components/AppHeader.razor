@@ -1,0 +1,116 @@
+@inject AppStateService AppState
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@implements IDisposable
+
+<header class="app-mobile-header sticky-top">
+    <div class="d-flex align-items-center justify-content-between px-3 py-2">
+        <!-- Logo / Marca -->
+        <a href="" class="d-flex align-items-center gap-2 text-decoration-none">
+            <span class="header-brand-badge">€</span>
+            <div>
+                <div class="fw-bold text-white fs-6 lh-1">FinanzasPro</div>
+                <div class="fs-xs text-slate-400">Contabilidad Interna</div>
+            </div>
+        </a>
+
+        <!-- Disponible Real y Acciones -->
+        <div class="d-flex align-items-center gap-2">
+            <div class="header-available-pill" title="Dinero Propio Realmente Disponible">
+                <span class="fs-xs text-slate-300 me-1">Disp:</span>
+                <span class="fw-bold @(AppState.Data.RealAvailableCash >= 0 ? "text-emerald-400" : "text-rose-400")">
+                    @AppState.Data.RealAvailableCash.ToString("N0") €
+                </span>
+            </div>
+
+            @if (canInstall)
+            {
+                <button class="btn btn-xs btn-primary rounded-pill px-2 py-1 fs-xs d-flex align-items-center gap-1 shadow-xs" @onclick="InstallPwa" title="Instalar en tu móvil o PC">
+                    <Icon Name="download" Size="13" />
+                    <span>Instalar</span>
+                </button>
+            }
+
+            <a href="menu" class="header-icon-btn text-slate-200" title="Ver todos los módulos">
+                <Icon Name="settings" Size="18" />
+            </a>
+        </div>
+    </div>
+</header>
+
+<style>
+    .app-mobile-header {
+        background-color: #0f172a;
+        border-bottom: 1px solid #1e293b;
+        z-index: 1030;
+    }
+    .header-brand-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-weight: 800;
+        border-radius: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    }
+    .header-available-pill {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 0.8rem;
+    }
+    .text-emerald-400 { color: #34d399 !important; }
+    .text-rose-400 { color: #fb7185 !important; }
+    .header-icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: background 0.15s ease;
+    }
+    .header-icon-btn:hover {
+        background-color: #334155;
+    }
+</style>
+
+@code {
+    private bool canInstall = false;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                canInstall = await JS.InvokeAsync<bool>("financialApp.isInstallable");
+                StateHasChanged();
+            }
+            catch { }
+        }
+    }
+
+    private async Task InstallPwa()
+    {
+        await JS.InvokeVoidAsync("financialApp.promptInstall");
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

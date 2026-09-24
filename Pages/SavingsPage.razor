@@ -1,0 +1,214 @@
+@page "/ahorro"
+@inject AppStateService AppState
+@implements IDisposable
+
+<div class="savings-container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold text-slate-900 m-0">Objetivos de Ahorro & Huchas</h1>
+            <p class="text-muted small m-0 mt-1">
+                Fija tu meta mensual de ahorro y distribuye tu capital en distintas huchas (vivienda, viajes, impuestos, emergencia, proyectos).
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1" @onclick="OpenConfigTargetModal">
+                <Icon Name="settings" Size="16" />
+                <span>Meta Mensual: @AppState.Data.SavingsConfig.MonthlySavingsTarget.ToString("N0") €/mes</span>
+            </button>
+            <button class="btn btn-primary rounded-pill px-3 shadow-xs d-flex align-items-center gap-1" @onclick="OpenAddJarModal">
+                <Icon Name="plus" Size="16" />
+                <span>Nueva Hucha</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TARJETAS DEL OBJETIVO MENSUAL (PUNTO 9) -->
+    @{
+        decimal monthlyTarget = AppState.Data.SavingsConfig.MonthlySavingsTarget;
+        decimal monthAvailableForSavings = Math.Max(0m, AppState.Data.CurrentMonthProfit);
+        decimal savingsShortfall = Math.Max(0m, monthlyTarget - monthAvailableForSavings);
+        decimal complianceRatio = monthlyTarget > 0 ? Math.Min(100m, Math.Round((monthAvailableForSavings / monthlyTarget) * 100m, 1)) : 0m;
+        decimal totalJarsAmount = AppState.Data.SavingsConfig.Jars.Sum(j => j.CurrentAmount);
+    }
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Objetivo de Este Mes</span>
+                <span class="fs-4 fw-bold text-dark mt-1">@monthlyTarget.ToString("N2") €</span>
+                <small class="text-muted">Meta fijada por ti</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-success">
+                <span class="text-muted small fw-semibold text-uppercase">Capacidad Ahorrada Mes</span>
+                <span class="fs-4 fw-bold text-success mt-1">@monthAvailableForSavings.ToString("N2") €</span>
+                <small class="text-muted">@complianceRatio% conseguido</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-warning">
+                <span class="text-muted small fw-semibold text-uppercase">Falta para la Meta</span>
+                <span class="fs-4 fw-bold text-warning mt-1">@savingsShortfall.ToString("N2") €</span>
+                <small class="text-muted">Déficit para cubrir el objetivo</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card shadow-sm border-0 p-3 bg-white border-start border-4 border-primary">
+                <span class="text-muted small fw-semibold text-uppercase">Total en Huchas / Fondos</span>
+                <span class="fs-4 fw-bold text-primary mt-1">@totalJarsAmount.ToString("N2") €</span>
+                <small class="text-muted">@AppState.Data.SavingsConfig.Jars.Count fondos activos</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA GENERAL DE CUMPLIMIENTO DEL MES -->
+    <div class="card shadow-sm border-0 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h2 class="h6 fw-bold m-0 text-slate-900">Cumplimiento del Objetivo de Ahorro Este Mes</h2>
+                <small class="text-muted">Progreso: @monthAvailableForSavings.ToString("N2") € de @monthlyTarget.ToString("N2") €</small>
+            </div>
+            <span class="badge @(complianceRatio >= 100 ? "bg-success" : "bg-primary") px-3 py-1 fs-6 rounded-pill">
+                @complianceRatio%
+            </span>
+        </div>
+        <div class="progress" style="height: 12px; border-radius: 6px;">
+            <div class="progress-bar @(complianceRatio >= 100 ? "bg-success" : "bg-primary")" role="progressbar" style="width: @complianceRatio%;"></div>
+        </div>
+    </div>
+
+    <!-- LISTADO DE HUCHAS / FONDOS TEMÁTICOS -->
+    <div class="row g-4">
+        @foreach (var jar in AppState.Data.SavingsConfig.Jars)
+        {
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-slate-900 fs-6">@jar.Name</span>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-danger btn-xs" @onclick="() => DeleteJar(jar.Id)">
+                                        <Icon Name="trash" Size="13" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="fs-4 fw-bold text-dark mt-1">@jar.CurrentAmount.ToString("N2") €</div>
+                            <small class="text-muted d-block mb-3">Meta: @jar.TargetAmount.ToString("N2") €</small>
+
+                            <ProgressBar 
+                                Current="@jar.CurrentAmount" 
+                                Target="@jar.TargetAmount" 
+                                InvertAlert="true" />
+                        </div>
+
+                        <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                            <button class="btn btn-sm btn-outline-success w-100 rounded-pill" @onclick="() => QuickAddSavings(jar, 100)">
+                                +100 €
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary w-100 rounded-pill" @onclick="() => QuickAddSavings(jar, 250)">
+                                +250 €
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- MODAL AJUSTAR META MENSUAL -->
+<ModalDialog IsOpen="isConfigModalOpen" Title="Objetivo Mensual de Ahorro" OnClose="() => isConfigModalOpen = false">
+    <ChildContent>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">¿Cuánto te gustaría ahorrar cada mes? (€)</label>
+            <input type="number" step="50" class="form-control form-control-lg fw-bold" @bind="tempMonthlyTarget" />
+        </div>
+        <p class="small text-muted m-0">
+            Esta meta se utilizará en el informe mensual y en el panel principal para evaluar el ahorro conseguido tras cubrir impuestos, gastos y reservas.
+        </p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isConfigModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveMonthlyTarget">Guardar Meta</button>
+    </Footer>
+</ModalDialog>
+
+<!-- MODAL NUEVA HUCHA -->
+<ModalDialog IsOpen="isJarModalOpen" Title="Crear Nueva Hucha / Fondo" OnClose="() => isJarModalOpen = false">
+    <ChildContent>
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label class="form-label small fw-semibold">Nombre de la Hucha</label>
+                <input type="text" class="form-control" @bind="newJar.Name" placeholder="Ej. Viajes, Entrada Piso, Proyectos Personales..." />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Saldo Actual (€)</label>
+                <input type="number" step="50" class="form-control" @bind="newJar.CurrentAmount" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Meta Objetivo (€)</label>
+                <input type="number" step="100" class="form-control" @bind="newJar.TargetAmount" />
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-light" @onclick="() => isJarModalOpen = false">Cancelar</button>
+        <button class="btn btn-primary" @onclick="SaveJar">Guardar Hucha</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    private bool isConfigModalOpen = false;
+    private decimal tempMonthlyTarget = 500m;
+
+    private bool isJarModalOpen = false;
+    private SavingsJar newJar = new();
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenConfigTargetModal()
+    {
+        tempMonthlyTarget = AppState.Data.SavingsConfig.MonthlySavingsTarget;
+        isConfigModalOpen = true;
+    }
+
+    private async Task SaveMonthlyTarget()
+    {
+        if (tempMonthlyTarget <= 0) return;
+        await AppState.SetSavingsMonthlyTargetAsync(tempMonthlyTarget);
+        isConfigModalOpen = false;
+    }
+
+    private void OpenAddJarModal()
+    {
+        newJar = new SavingsJar { TargetAmount = 2000m, CurrentAmount = 0m };
+        isJarModalOpen = true;
+    }
+
+    private async Task SaveJar()
+    {
+        if (string.IsNullOrWhiteSpace(newJar.Name)) return;
+        await AppState.AddOrUpdateJarAsync(newJar);
+        isJarModalOpen = false;
+    }
+
+    private async Task QuickAddSavings(SavingsJar jar, decimal addAmount)
+    {
+        jar.CurrentAmount += addAmount;
+        await AppState.AddOrUpdateJarAsync(jar);
+    }
+
+    private async Task DeleteJar(string id)
+    {
+        await AppState.DeleteJarAsync(id);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}
